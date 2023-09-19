@@ -50,5 +50,6 @@ coverage.xml
 docs/_build/
 
 /data
+/figures
 falcon.csv
 falcon.mgf
