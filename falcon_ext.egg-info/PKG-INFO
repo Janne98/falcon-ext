@@ -1,7 +1,0 @@
-Metadata-Version: 2.1
-Name: falcon-ext
-Version: 0.0.1
-Summary: Falcon extension package
-Author: Janne Heirman
-
-Extension of the falcon-ms package

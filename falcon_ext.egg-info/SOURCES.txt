@@ -1,6 +1,0 @@
-setup.py
-falcon-ext/__init__.py
-falcon_ext.egg-info/PKG-INFO
-falcon_ext.egg-info/SOURCES.txt
-falcon_ext.egg-info/dependency_links.txt
-falcon_ext.egg-info/top_level.txt
