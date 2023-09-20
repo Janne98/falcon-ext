@@ -46,7 +46,7 @@ def main(args: Union[str, List[str]] = None) -> int:
     cluster = clustering.generate_clusters(distance_matrix)
     clustering.plot_dendrogram(cluster)
 
-    #network.network_from_distance_matrix(spectra, distance_matrix)
+    network.network_from_distance_matrix(spectra, distance_matrix)
     return 0
 
 if __name__ == '__main__':
