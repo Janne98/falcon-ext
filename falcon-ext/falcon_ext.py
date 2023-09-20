@@ -8,7 +8,7 @@ import numpy as np
 from typing import Dict, Iterator, List, Tuple, Union
 
 from ms_io import mgf_io
-from cluster import similarity
+from cluster import similarity, masking
 from plot import network
 
 logger = logging.getLogger('falcon_ext')
@@ -24,7 +24,7 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     spectra = list(mgf_io.get_spectra(filename))
     spectra.sort(key=lambda x: x.precursor_mz)
-    #spectra = spectra[:10]
+    spectra = spectra[:10]
     n_spectra = len(spectra)
 
     # calculate pairwise mod cos similarity
@@ -32,7 +32,14 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     distance_matrix = similarity.create_mod_cos_dist_matrix(spectra)
 
-    network.network_from_distance_matrix(spectra, distance_matrix)
+    print('Generating mask ...')
+
+    mask = masking.generate_mask(spectra, 0.05)
+    print(mask)
+
+    print([spec.precursor_mz for spec in spectra])
+
+    #network.network_from_distance_matrix(spectra, distance_matrix)
     return 0
 
 if __name__ == '__main__':

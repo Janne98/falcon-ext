@@ -39,7 +39,7 @@ def create_mod_cos_dist_matrix(
 
     dist_matrix = create_dist_matrix(dist_list, len(spectra))
 
-    print(dist_matrix)
+    #print(dist_matrix)
 
     assert np.allclose(dist_matrix, dist_matrix.T, rtol=1e-05, atol=1e-08), \
         f"Distance matrix not symmetric"
