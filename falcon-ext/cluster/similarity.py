@@ -146,3 +146,6 @@ def _convert_to_spectrum(msms_spectrum : MsmsSpectrum) -> Spectrum:
             "precursor_mz": msms_spectrum.precursor_mz
         }
     )
+
+def similarity_to_distance(sim_matrix: np.ndarray) -> np.ndarray:
+    return 1 - sim_matrix
