@@ -31,7 +31,7 @@ def _add_edges(
     # only upper triangle of dist matrix, diagonal not included
     for i in range(dist_matrix.shape[0]):
         for j in range(i+1, dist_matrix.shape[1]):
-            if dist_matrix[i][j] > 0.6:
+            if dist_matrix[i][j] < 0.6:
                 graph.add_edge(spectra[i], spectra[j])
     
     return graph

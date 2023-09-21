@@ -7,6 +7,8 @@ import numpy as np
 
 from typing import Dict, Iterator, List, Tuple, Union
 
+import multiprocessing
+
 from ms_io import mgf_io
 from cluster import similarity, masking, clustering
 from plot import network
@@ -14,6 +16,8 @@ from plot import network
 logger = logging.getLogger('falcon_ext')
 
 def main(args: Union[str, List[str]] = None) -> int:
+
+    print(multiprocessing.cpu_count())
 
     # read file
     filename = sys.argv[-1]
@@ -44,10 +48,13 @@ def main(args: Union[str, List[str]] = None) -> int:
     print(distance_matrix)
 
     cluster = clustering.generate_clusters(distance_matrix)
-    clustering.plot_dendrogram(cluster)
+    #clustering.plot_dendrogram(cluster)
 
-    network.network_from_distance_matrix(spectra, distance_matrix)
+    #network.network_from_distance_matrix(spectra, distance_matrix)
+
+    clustering.get_medoids(distance_matrix, cluster)
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
