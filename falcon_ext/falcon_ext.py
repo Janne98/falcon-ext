@@ -55,7 +55,9 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     network.network_from_distance_matrix(spectra, distance_matrix)
 
-    clustering.get_medoids(distance_matrix, cluster)
+    medoids = clustering.get_medoids(distance_matrix, cluster)
+
+    network.network_from_clusters(spectra, medoids, distance_matrix)
 
     plt.show() # keep figures alive
 

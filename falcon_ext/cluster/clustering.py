@@ -39,7 +39,7 @@ def generate_clusters(
 
 def get_medoids( 
         dist_matrix: np.ndarray, 
-        clustering: AgglomerativeClustering) -> List[Tuple[int, int]]:
+        clustering: AgglomerativeClustering) -> Dict[int, Tuple[int, int]]:
     """
     Get the index of the representative spectrum (medoid) for each cluster.
 
@@ -52,9 +52,9 @@ def get_medoids(
 
     Returns
     -------
-    List[Tuple[int, int]]
-        list of (cluster label, spectrum index)-pairs, 
-        indicating the representative spectrum for each cluster.
+    Dict[int, Tuple[int, int]]
+        dictionary indicating the cluster size and representative spectrum (medoid) for each cluster.
+        format: {cluster label : (cluster size, spectrum index)}
     """
     labels = clustering.labels_
     # create dict of {cluster_label : [spectrum_idx]}-format
@@ -64,16 +64,17 @@ def get_medoids(
                                        if label == cluster_label]
     # print(cluster_dict)
     # create dict of {cluster_label : medoid_spectrum_idx}-format
-    medoids = []
+    medoids = {}
     for cluster, specs in cluster_dict.items():
+        cluster_size = len(specs)
         dist_sums = []
         if len(specs) < 2:
-            medoids.append((cluster, specs[0]))
+            medoids[cluster] = (1, specs[0])
             continue
         for spec in specs:
             other_specs = [spec_idx for spec_idx in specs if spec_idx != spec]
             dist_sums.append(sum(dist_matrix[spec][other_specs]))
-        medoids.append((cluster, specs[dist_sums.index(min(dist_sums))]))
+        medoids[cluster] = (cluster_size, specs[dist_sums.index(min(dist_sums))])
     print(medoids)
 
     return medoids
@@ -111,6 +112,6 @@ def plot_dendrogram(model, **kwargs):
 
     # plot the corresponding dendrogram
     #plt.ion()
-    fig = plt.figure(1)
+    fig = plt.figure("Clustering dendrogram")
     dendrogram(linkage_matrix, **kwargs)
     fig.show()
