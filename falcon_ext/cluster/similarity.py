@@ -1,3 +1,5 @@
+import time
+
 from typing import List, Tuple
 
 from spectrum_utils.spectrum import MsmsSpectrum
@@ -11,10 +13,12 @@ from multiprocessing.pool import ThreadPool
 
 import itertools as it
 
+from . import cosine
+
 
 def create_mod_cos_dist_matrix(
         spectra: List[MsmsSpectrum], 
-        n_threads: int = 512) -> np.ndarray:
+        n_threads: int = 8) -> np.ndarray:
     """
     Create a distance matrix containing the pairwise modified cosine similarity 
         for the input spectra.
@@ -31,20 +35,41 @@ def create_mod_cos_dist_matrix(
     np.ndarray
         Squarre matrix containing all pairwise modified cosine similarities.
     """
+    # start1 = time.time()
+    # with ThreadPool(n_threads) as pool:
+    #     dist_list1 = pool.starmap(
+    #         get_modified_cosine_similarity, 
+    #         it.combinations(spectra, 2)
+    #         )
+    # end1 = time.time()
+        
+    start2 = time.time()
     with ThreadPool(n_threads) as pool:
-        dist_list = pool.starmap(
-            get_modified_cosine_similarity, 
+        dist_list2 = pool.starmap(
+            get_modified_cosine_similarity2, 
             it.combinations(spectra, 2)
             )
+    end2 = time.time()
 
-    dist_matrix = create_dist_matrix(dist_list, len(spectra))
+    print("number of threads: " + str(n_threads) + " - " + str(end2-start2))
+
+    # print("matchms: " + str(end1-start1) + " - wout's code: " + str(end2-start2))
+
+    # dist_matrix1 = create_dist_matrix(dist_list1, len(spectra))
+    dist_matrix2 = create_dist_matrix(dist_list2, len(spectra))
 
     #print(dist_matrix)
 
-    assert np.allclose(dist_matrix, dist_matrix.T, rtol=1e-05, atol=1e-08), \
+    # assert np.allclose(dist_matrix1, dist_matrix1.T, rtol=1e-05, atol=1e-08), \
+    #     f"Distance matrix not symmetric"
+    
+    assert np.allclose(dist_matrix2, dist_matrix2.T, rtol=1e-05, atol=1e-08), \
         f"Distance matrix not symmetric"
     
-    return dist_matrix
+    # if not np.allclose(dist_matrix1, dist_matrix2, rtol=1e-05, atol=1e-08):
+    #     print(dist_matrix1 - dist_matrix2)
+    
+    return dist_matrix2
 
 
 def get_modified_cosine_similarity(
@@ -66,6 +91,11 @@ def get_modified_cosine_similarity(
         Modified cosine similarity of the input spectra.
     """
     return modified_cosine_similarity(spec1, spec2).item()[0]
+
+def get_modified_cosine_similarity2(
+        spec1: MsmsSpectrum,
+        spec2: MsmsSpectrum) -> float:
+    return cosine.modified_cosine(spec1, spec2, 0.05).score
 
 
 def create_dist_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:

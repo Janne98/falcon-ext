@@ -62,7 +62,7 @@ def get_medoids(
     for cluster_label in range(max(labels) + 1):
         cluster_dict[cluster_label] = [idx for idx, label in enumerate(labels) \
                                        if label == cluster_label]
-    print(cluster_dict)
+    # print(cluster_dict)
     # create dict of {cluster_label : medoid_spectrum_idx}-format
     medoids = []
     for cluster, specs in cluster_dict.items():
@@ -98,16 +98,19 @@ def plot_dendrogram(model, **kwargs):
         current_count = 0
         for child_idx in merge:
             if child_idx < n_samples:
-                current_count += 1 # leaf node
-            else: 
+                current_count += 1  # leaf node
+            else:
                 current_count += counts[child_idx - n_samples]
         counts[i] = current_count
 
-    linkage_matrix = np.column_stack([
-        model.children_,
-        model.distances_,
-        counts]).astype(float)
+    linkage_matrix = np.column_stack(
+        [model.children_, model.distances_, counts]
+    ).astype(float)
+
+    # np.clip(linkage_matrix,0,1,linkage_matrix)
 
     # plot the corresponding dendrogram
+    #plt.ion()
+    fig = plt.figure(1)
     dendrogram(linkage_matrix, **kwargs)
-    plt.show()
+    fig.show()

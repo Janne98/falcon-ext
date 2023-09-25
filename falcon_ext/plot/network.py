@@ -19,8 +19,9 @@ def network_from_distance_matrix(
 
     graph = _add_edges(graph, spectra, dist_matrix)
 
+    fig = plt.figure(2)
     nx.draw(graph, labels=label_dict, with_labels=True)
-    plt.show()
+    fig.show()
 
     
 def _add_edges(
@@ -31,7 +32,7 @@ def _add_edges(
     # only upper triangle of dist matrix, diagonal not included
     for i in range(dist_matrix.shape[0]):
         for j in range(i+1, dist_matrix.shape[1]):
-            if dist_matrix[i][j] < 0.6:
+            if dist_matrix[i][j] < 0.35:
                 graph.add_edge(spectra[i], spectra[j])
     
     return graph
