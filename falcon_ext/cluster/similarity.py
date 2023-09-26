@@ -35,41 +35,18 @@ def create_mod_cos_dist_matrix(
     np.ndarray
         Squarre matrix containing all pairwise modified cosine similarities.
     """
-    # start1 = time.time()
-    # with ThreadPool(n_threads) as pool:
-    #     dist_list1 = pool.starmap(
-    #         get_modified_cosine_similarity, 
-    #         it.combinations(spectra, 2)
-    #         )
-    # end1 = time.time()
-        
-    start2 = time.time()
     with ThreadPool(n_threads) as pool:
-        dist_list2 = pool.starmap(
+        dist_list = pool.starmap(
             get_modified_cosine_similarity2, 
             it.combinations(spectra, 2)
             )
-    end2 = time.time()
 
-    print("number of threads: " + str(n_threads) + " - " + str(end2-start2))
-
-    # print("matchms: " + str(end1-start1) + " - wout's code: " + str(end2-start2))
-
-    # dist_matrix1 = create_dist_matrix(dist_list1, len(spectra))
-    dist_matrix2 = create_dist_matrix(dist_list2, len(spectra))
-
-    #print(dist_matrix)
-
-    # assert np.allclose(dist_matrix1, dist_matrix1.T, rtol=1e-05, atol=1e-08), \
-    #     f"Distance matrix not symmetric"
+    dist_matrix = create_dist_matrix(dist_list, len(spectra))
     
-    assert np.allclose(dist_matrix2, dist_matrix2.T, rtol=1e-05, atol=1e-08), \
+    assert np.allclose(dist_matrix, dist_matrix.T, rtol=1e-05, atol=1e-08), \
         f"Distance matrix not symmetric"
     
-    # if not np.allclose(dist_matrix1, dist_matrix2, rtol=1e-05, atol=1e-08):
-    #     print(dist_matrix1 - dist_matrix2)
-    
-    return dist_matrix2
+    return dist_matrix
 
 
 def get_modified_cosine_similarity(

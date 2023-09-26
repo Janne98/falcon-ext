@@ -9,7 +9,16 @@ from spectrum_utils.spectrum import MsmsSpectrum
 def network_from_distance_matrix(
         spectra: List[MsmsSpectrum], 
         dist_matrix: np.ndarray) -> None:
+    """
+    Plot the molecular network starting from the distance matrix.
 
+    Parameters
+    ----------
+    spectra: List[MsmsSpectrum]
+        List of MS/MS spectra.
+    dist_matrix: np.ndarray
+        pairwise distance matrix of the spectra.
+    """
     graph = nx.Graph()
     graph.add_nodes_from(spectra)
 
@@ -28,7 +37,19 @@ def network_from_clusters(
         spectra: List[MsmsSpectrum],
         medoids: Dict[int, Tuple[int, int]],
         dist_matrix: np.ndarray) -> None:
-    
+    """
+    Plot the molecular network from the distance matrix and cluster medoids.
+
+    Parameters
+    ----------
+    spectra: List[MsmsSpectrum]
+        List of MS/MS spectra.
+    medoids: Dict[int, Tuple[int, int]]
+        dictionary of {clusted_idx: (cluster size, medoid_spectrum_idx)}-format,
+        contains the cluster size and spectrum index of the medoid for each cluster.
+    dist_matrix: np.ndarray
+        pairwise distance matrix of the spectra.
+    """
     medoids_idx = [idx for _, (_, idx) in medoids.items()]
     spec_slice = [spectra[idx] for idx in medoids_idx]
     dist_slice = np.array([[dist_matrix[idx][idy] for idy in medoids_idx] \
@@ -54,7 +75,23 @@ def _add_edges(
     graph: nx.Graph, 
     spectra: List[MsmsSpectrum], 
     dist_matrix: np.ndarray) -> nx.Graph:
+    """
+    Add edges between noded in the network.
 
+    Parameters
+    ----------
+    graph: nx.Graph
+        graph to add edges to.
+    spectra: List[MsmsSpectrum]
+        List of MS/MS spectra.
+    dist_matrix: np.ndarray
+        pairwise distance matrix of the spectra.
+
+    Returns
+    -------
+    nx.Graph
+        graph with edges (if added any)
+    """
     # only upper triangle of dist matrix, diagonal not included
     for i in range(dist_matrix.shape[0]):
         for j in range(i+1, dist_matrix.shape[1]):

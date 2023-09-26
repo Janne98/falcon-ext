@@ -47,7 +47,7 @@ def main(args: Union[str, List[str]] = None) -> int:
     mask = masking.generate_mask(spectra, 0.05)
     #print(mask)
 
-    # print([spec.precursor_mz for spec in spectra])
+    print([spec.identifier for spec in spectra])
 
     distance_matrix = similarity.similarity_to_distance(
         np.multiply(similarity_matrix, mask))

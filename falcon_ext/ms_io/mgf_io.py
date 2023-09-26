@@ -41,8 +41,8 @@ def _parse_spectrum(spectrum_dict: Dict) -> sus.MsmsSpectrum:
     MsmsSpectrum
         The parsed cluster.
     """
-    if 'title' in spectrum_dict['params']:
-        identifier = spectrum_dict['params']['title']
+    if 'scans' in spectrum_dict['params']:
+        identifier = spectrum_dict['params']['scans']
     else:
         identifier = id(spectrum_dict)
 
