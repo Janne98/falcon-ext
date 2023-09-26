@@ -14,22 +14,27 @@ import multiprocessing
 from ms_io import mgf_io
 from cluster import similarity, masking, clustering
 from plot import network
+from eval import eval
 
 logger = logging.getLogger('falcon_ext')
 
 def main(args: Union[str, List[str]] = None) -> int:
 
     # read file
-    filename = sys.argv[-1]
-    if not os.path.isfile(filename):
-        raise ValueError(f'Non-existing peak file (filename)')
+    spec_filename = sys.argv[-2]
+    anno_filename = sys.argv[-1]
+
+    if not os.path.isfile(spec_filename):
+        raise ValueError(f'Non-existing peak file (spec_filename)')
+    if not os.path.isfile(anno_filename):
+        raise ValueError(f'Non-existing annotations file (anno_filename)')
 
     print('Reading MGF file ...')
 
-    spectra = list(mgf_io.get_spectra(filename))
+    spectra = list(mgf_io.get_spectra(spec_filename))
     spectra.sort(key=lambda x: x.precursor_mz)
-    spectra = spectra[33:40]
-    # spectra = spectra[:500]
+    # spectra = spectra[33:40]
+    spectra = spectra[:500]
     n_spectra = len(spectra)
 
     # calculate pairwise mod cos similarity
@@ -58,6 +63,8 @@ def main(args: Union[str, List[str]] = None) -> int:
     medoids = clustering.get_medoids(distance_matrix, cluster)
 
     network.network_from_clusters(spectra, medoids, distance_matrix)
+
+    eval.evaluate_clustering(anno_filename, cluster)
 
     plt.show() # keep figures alive
 
