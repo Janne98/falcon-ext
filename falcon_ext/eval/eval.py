@@ -6,7 +6,10 @@ from sklearn.cluster import AgglomerativeClustering
 
 from typing import List, Dict, Tuple
 
-def evaluate_clustering(filename: str, clustering: AgglomerativeClustering) -> None:
+def evaluate_clustering(
+    filename: str, 
+    clustering: AgglomerativeClustering,
+    spec_map: List[int]) -> None:
     """
     Evaluate the clustering performance.
 
@@ -16,20 +19,25 @@ def evaluate_clustering(filename: str, clustering: AgglomerativeClustering) -> N
         filename of the tsv-file containing the true labels for the identified spectra.
     clustering: AgglomerativeClustering
         clustering result 
+    spec_map: List[int]
+        list of scan indices, mapping of spectrum index (in clustering) to scan index.
     """
     annotations = _read_tsv_file(filename)
     pred_labels = clustering.labels_
-    annotations = annotations[annotations['#Scan#'] < len(pred_labels)+1] # scan idx starts from 1
-
-    identified_spectra = _get_identified_spectra(annotations)
-    true_labels = _get_spectrum_labels(annotations)
-    # get cluster labels of the identified spectra only
-    pred_labels_identified = pred_labels[[i - 1 for i in identified_spectra]]
+    # get annotations of identified spectra that are in clustering
+    annotations_subset = annotations[annotations['#Scan#'].isin(spec_map)]
+    # get the scan idx of all identified spectra in clustering
+    identified_spectra = _get_identified_spectra(annotations_subset)
+    # get the true labels of all identified spectra in clustering
+    true_labels = _get_spectrum_labels(annotations_subset)
+    # get predicted cluster labels for all identified spectra in clustering
+    pred_labels_identified = [pred_labels[spec_map.index(scan_id)] \
+        for scan_id in identified_spectra]
 
     # calculate the adjusted rand index for the spectra with ground truth
     ari = _adjusted_rand_index(true_labels, pred_labels_identified)
     print("adjusted rand index: " + str(ari))
-
+    # calculate the adjusted mutual information score for all spectra with ground truth
     mis = _mutual_information_score(true_labels, pred_labels_identified)
     print("mutual information score: " + str(mis))
 

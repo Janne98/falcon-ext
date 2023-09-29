@@ -34,8 +34,10 @@ def main(args: Union[str, List[str]] = None) -> int:
     spectra = list(mgf_io.get_spectra(spec_filename))
     spectra.sort(key=lambda x: x.precursor_mz)
     # spectra = spectra[33:40]
-    spectra = spectra[:500]
+    spectra = spectra[:100]
     n_spectra = len(spectra)
+
+    scan_idx_list = [int(spec.identifier) for spec in spectra]
 
     # calculate pairwise mod cos similarity
     print('Calculating modified cosine similarity ...')
@@ -46,8 +48,6 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     mask = masking.generate_mask(spectra, 0.05)
     #print(mask)
-
-    print([spec.identifier for spec in spectra])
 
     distance_matrix = similarity.similarity_to_distance(
         np.multiply(similarity_matrix, mask))
@@ -64,7 +64,7 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     network.network_from_clusters(spectra, medoids, distance_matrix)
 
-    eval.evaluate_clustering(anno_filename, cluster)
+    eval.evaluate_clustering(anno_filename, cluster, scan_idx_list)
 
     plt.show() # keep figures alive
 
