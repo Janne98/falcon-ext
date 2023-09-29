@@ -41,29 +41,29 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     # calculate pairwise mod cos similarity
     print('Calculating modified cosine similarity ...')
+    similarity_matrix = similarity.create_mod_cos_similarity_matrix(spectra)
+    distance_matrix = similarity.similarity_to_distance(similarity_matrix)
 
-    similarity_matrix = similarity.create_mod_cos_dist_matrix(spectra)
-
+    # create masked distance matrix for clustering based on precursor mass
     print('Generating mask ...')
-
     mask = masking.generate_mask(spectra, 0.05)
-    #print(mask)
-
-    distance_matrix = similarity.similarity_to_distance(
+    masked_distance_matrix = similarity.similarity_to_distance(\
         np.multiply(similarity_matrix, mask))
     # deal with floating point inaccuracy 
     # np.clip results in "ValueError: Linkage 'Z' uses the same cluster more than once." when plotting dendrogram
-    distance_matrix = np.where(distance_matrix>0, distance_matrix, 0)
+    masked_distance_matrix = np.where(masked_distance_matrix>0, masked_distance_matrix, 0)
 
-    cluster = clustering.generate_clusters(distance_matrix)
+    # cluster spectra and plot dendrogram
+    cluster = clustering.generate_clusters(masked_distance_matrix)
     clustering.plot_dendrogram(cluster, labels=cluster.labels_)
 
-    network.network_from_distance_matrix(spectra, distance_matrix)
+    # plot molecular network before and after clustering
+    network.network_from_distance_matrix(spectra, distance_matrix, 0.35)
+    # get cluster medoids
+    medoids = clustering.get_medoids(masked_distance_matrix, cluster)
+    network.network_from_clusters(spectra, medoids, distance_matrix, 0.35)
 
-    medoids = clustering.get_medoids(distance_matrix, cluster)
-
-    network.network_from_clusters(spectra, medoids, distance_matrix)
-
+    # evaluate clustering
     eval.evaluate_clustering(anno_filename, cluster, scan_idx_list)
 
     plt.show() # keep figures alive

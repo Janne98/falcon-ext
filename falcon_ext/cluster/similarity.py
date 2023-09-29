@@ -16,7 +16,7 @@ import itertools as it
 from . import cosine
 
 
-def create_mod_cos_dist_matrix(
+def create_mod_cos_similarity_matrix(
         spectra: List[MsmsSpectrum], 
         n_threads: int = 8) -> np.ndarray:
     """
@@ -33,49 +33,29 @@ def create_mod_cos_dist_matrix(
     Returns
     -------
     np.ndarray
-        Squarre matrix containing all pairwise modified cosine similarities.
+        Squarre matrix containing all pairwise modified cosine distances.
     """
     with ThreadPool(n_threads) as pool:
-        dist_list = pool.starmap(
-            get_modified_cosine_similarity2, 
+        similarity_list = pool.starmap(
+            _get_modified_cosine_similarity, 
             it.combinations(spectra, 2)
             )
 
-    dist_matrix = create_dist_matrix(dist_list, len(spectra))
+    distance_matrix = _list_to_matrix(similarity_list, len(spectra))
     
-    assert np.allclose(dist_matrix, dist_matrix.T, rtol=1e-05, atol=1e-08), \
+    assert np.allclose(distance_matrix, distance_matrix.T, rtol=1e-05, atol=1e-08), \
         f"Distance matrix not symmetric"
     
-    return dist_matrix
+    return distance_matrix
 
 
-def get_modified_cosine_similarity(
-        spec1: MsmsSpectrum, 
-        spec2: MsmsSpectrum) -> float:
-    """
-    Get the modified cosine similarity of the input spectra
-
-    Parameters
-    ----------
-    spec1 : MsmsSpectrum
-        MS/MS spectrum.
-    spec2 : MsmsSpectrum
-        MS/MS spectrum.
-
-    Returns
-    -------
-    float
-        Modified cosine similarity of the input spectra.
-    """
-    return modified_cosine_similarity(spec1, spec2).item()[0]
-
-def get_modified_cosine_similarity2(
+def _get_modified_cosine_similarity(
         spec1: MsmsSpectrum,
         spec2: MsmsSpectrum) -> float:
     return cosine.modified_cosine(spec1, spec2, 0.05).score
 
 
-def create_dist_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:
+def _list_to_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:
     """
     Create a distance matrix from a list only containing the distances 
         above the diagonal, similarity metric must be symmetric.
@@ -105,54 +85,18 @@ def create_dist_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:
     return dist_matrix
 
 
-def modified_cosine_similarity(
-    spectrum1: MsmsSpectrum, 
-    spectrum2: MsmsSpectrum) -> Tuple[float, int]:
+def similarity_to_distance(similarity_matrix: np.ndarray) -> np.ndarray:
     """
-    Calculate the modified cosine similarty for the given spectra.
+    Convert similarity matrix to distance matrix (distance = 1 - similarity).
 
     Parameters
     ----------
-    spectrum1 : MsmsSpectrum
-        input MS/MS spectrum.
-    spectrum2 : MsmsSpectrum
-        input MS/MS spectrum.
-
+    similarity_matrix : np.ndarray
+        Square 2D array of pairwise similarities.
+    
     Returns
     -------
-    Tuple[float, int]
-        modified cosine similarity and number of matched peaks.
+    np.ndarray
+        Squarre matrix containing all pairwise distances.
     """
-    spec1 = _convert_to_spectrum(spectrum1)
-    spec2 = _convert_to_spectrum(spectrum2)
-
-    mod_cosine = ModifiedCosine()
-
-    return mod_cosine.pair(spec1, spec2)
-
-
-def _convert_to_spectrum(msms_spectrum : MsmsSpectrum) -> Spectrum:
-    """
-    Convert MsmsSpectrum to matchms Spectrum.
-
-    Parameters
-    ----------
-    msms_spectrum : MsmsSpectrum
-        input MS/MS spectrum.
-
-    Returns
-    -------
-    Spectrum
-        MS/MS spectrum as matchms Spectrum.
-    """
-    return Spectrum(
-        mz=msms_spectrum.mz.astype(float),
-        intensities=msms_spectrum.intensity.astype(float),
-        metadata={
-            "id": msms_spectrum.identifier,
-            "precursor_mz": msms_spectrum.precursor_mz
-        }
-    )
-
-def similarity_to_distance(sim_matrix: np.ndarray) -> np.ndarray:
-    return 1 - sim_matrix
+    return 1 - similarity_matrix

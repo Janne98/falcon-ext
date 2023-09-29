@@ -23,7 +23,7 @@ def evaluate_clustering(
         list of scan indices, mapping of spectrum index (in clustering) to scan index.
     """
     annotations = _read_tsv_file(filename)
-    pred_labels = clustering.labels_
+    pred_labels = clustering.labels_ # sorted by pepmass
     # get annotations of identified spectra that are in clustering
     annotations_subset = annotations[annotations['#Scan#'].isin(spec_map)]
     # get the scan idx of all identified spectra in clustering

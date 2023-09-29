@@ -10,7 +10,7 @@ from sklearn.cluster import AgglomerativeClustering
 def generate_clusters(
         dist_matrix: np.ndarray, 
         linkage:str = "complete", 
-        distance_threshold: float = 0.6):
+        distance_threshold: float = 0.2):
     """
     Generate clusters using agglomerative (hierarchical) clustering.
 
