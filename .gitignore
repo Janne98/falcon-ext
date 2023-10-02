@@ -51,5 +51,5 @@ docs/_build/
 
 /data
 /figures
-falcon.csv
-falcon.mgf
+*.csv
+*.mgf

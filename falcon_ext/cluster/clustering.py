@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from typing import List, Dict, Tuple
@@ -78,6 +79,23 @@ def get_medoids(
     print(medoids)
 
     return medoids
+
+
+def clusters_to_csv(clustering: AgglomerativeClustering, spec_map: List[int]) -> None:
+    """
+    Write cluster assignments to csv file.
+
+    Parameters
+    ----------
+    clustering : AgglomerativeClustering
+        clustering result.
+    spec_map: List[int]
+        list of scan ids mapping index in clustering to scan.
+    """
+    labels = clustering.labels_
+    cluster_assignments = pd.DataFrame({'scan_id': spec_map, 'cluster_labels': labels})
+    cluster_assignments.to_csv('cluster_assignments.csv', index=False)
+
 
 # code from: 
 # https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html

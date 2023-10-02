@@ -34,7 +34,7 @@ def main(args: Union[str, List[str]] = None) -> int:
     spectra = list(mgf_io.get_spectra(spec_filename))
     spectra.sort(key=lambda x: x.precursor_mz)
     # spectra = spectra[33:40]
-    spectra = spectra[:100]
+    spectra = spectra[:200]
     n_spectra = len(spectra)
 
     scan_idx_list = [int(spec.identifier) for spec in spectra]
@@ -54,17 +54,21 @@ def main(args: Union[str, List[str]] = None) -> int:
     masked_distance_matrix = np.where(masked_distance_matrix>0, masked_distance_matrix, 0)
 
     # cluster spectra and plot dendrogram
+    print('Clustering...')
     cluster = clustering.generate_clusters(masked_distance_matrix)
     clustering.plot_dendrogram(cluster, labels=cluster.labels_)
 
     # plot molecular network before and after clustering
-    network.network_from_distance_matrix(spectra, distance_matrix, 0.35)
+    network.network_from_distance_matrix(spectra, distance_matrix, 0.2)
     # get cluster medoids
     medoids = clustering.get_medoids(masked_distance_matrix, cluster)
-    network.network_from_clusters(spectra, medoids, distance_matrix, 0.35)
+    network.network_from_clusters(spectra, medoids, distance_matrix, 0.2)
 
     # evaluate clustering
+    print('Cluster evaluation...')
     eval.evaluate_clustering(anno_filename, cluster, scan_idx_list)
+
+    clustering.clusters_to_csv(cluster, scan_idx_list)
 
     plt.show() # keep figures alive
 
@@ -73,20 +77,3 @@ def main(args: Union[str, List[str]] = None) -> int:
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
-"""
-Traceback (most recent call last):
-  File "/home/janne/falcon-ext/falcon_ext/falcon_ext.py", line 62, in <module>
-    sys.exit(main())
-             ^^^^^^
-  File "/home/janne/falcon-ext/falcon_ext/falcon_ext.py", line 52, in main
-    clustering.plot_dendrogram(cluster)
-  File "/home/janne/falcon-ext/falcon_ext/cluster/clustering.py", line 115, in plot_dendrogram
-    dendrogram(linkage_matrix, **kwargs)
-  File "/home/janne/anaconda3/envs/falcon-env/lib/python3.11/site-packages/scipy/cluster/hierarchy.py", line 3307, in dendrogram
-    is_valid_linkage(Z, throw=True, name='Z')
-  File "/home/janne/anaconda3/envs/falcon-env/lib/python3.11/site-packages/scipy/cluster/hierarchy.py", line 2293, in is_valid_linkage
-    raise ValueError('Linkage %suses the same cluster more than once.'
-ValueError: Linkage 'Z' uses the same cluster more than once.
-"""
