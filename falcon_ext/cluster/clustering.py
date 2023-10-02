@@ -10,8 +10,9 @@ from sklearn.cluster import AgglomerativeClustering
 
 def generate_clusters(
         dist_matrix: np.ndarray, 
+        connectivity: np.ndarray = None,
         linkage:str = "complete", 
-        distance_threshold: float = 0.2):
+        distance_threshold: float = 1):
     """
     Generate clusters using agglomerative (hierarchical) clustering.
 
@@ -19,6 +20,8 @@ def generate_clusters(
     ----------
     dist_matrix : np.ndarray
         distance matrix used for clustering.
+    connectivity : np.ndarray
+        connectivity matrix that defines the neighboring samples for each sample.
     linkage: str
         linkage method (see sklear documentation).
     distance_threshold: float
@@ -32,6 +35,7 @@ def generate_clusters(
     clustering = AgglomerativeClustering(
         n_clusters=None,
         metric="precomputed", 
+        connectivity=connectivity,
         linkage=linkage,
         distance_threshold=distance_threshold,
         compute_distances=True).fit(dist_matrix)
@@ -99,21 +103,21 @@ def clusters_to_csv(clustering: AgglomerativeClustering, spec_map: List[int]) ->
 
 # code from: 
 # https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
-def plot_dendrogram(model, **kwargs):
+def plot_dendrogram(clustering, **kwargs):
     """
     Plot a dendrogram of the clustering result.
 
     Parameters
     ----------
-    model : AgglomerativeClustering
+    clustering : AgglomerativeClustering
         clustering result.
     """
     # Create linkage matrix and then plot the dendrogram
 
     # create the counts of samples under each node
-    counts = np.zeros(model.children_.shape[0])
-    n_samples = len(model.labels_)
-    for i, merge in enumerate(model.children_):
+    counts = np.zeros(clustering.children_.shape[0])
+    n_samples = len(clustering.labels_)
+    for i, merge in enumerate(clustering.children_):
         current_count = 0
         for child_idx in merge:
             if child_idx < n_samples:
@@ -123,13 +127,10 @@ def plot_dendrogram(model, **kwargs):
         counts[i] = current_count
 
     linkage_matrix = np.column_stack(
-        [model.children_, model.distances_, counts]
+        [clustering.children_, clustering.distances_, counts]
     ).astype(float)
 
-    # np.clip(linkage_matrix,0,1,linkage_matrix)
-
     # plot the corresponding dendrogram
-    #plt.ion()
     fig = plt.figure("Clustering dendrogram")
     dendrogram(linkage_matrix, **kwargs)
     fig.show()
