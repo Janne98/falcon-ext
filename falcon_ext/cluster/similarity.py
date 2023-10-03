@@ -18,6 +18,7 @@ from . import cosine
 
 def create_mod_cos_similarity_matrix(
         spectra: List[MsmsSpectrum], 
+        fragment_tol: float,
         n_threads: int = 8) -> np.ndarray:
     """
     Create a distance matrix containing the pairwise modified cosine similarity 
@@ -35,10 +36,15 @@ def create_mod_cos_similarity_matrix(
     np.ndarray
         Squarre matrix containing all pairwise modified cosine distances.
     """
+    mod_cosine_args = []
+    spec_combos = it.combinations(spectra, 2)
+    for combo in spec_combos:
+        mod_cosine_args.append(combo + (fragment_tol,))
+
     with ThreadPool(n_threads) as pool:
         similarity_list = pool.starmap(
             _get_modified_cosine_similarity, 
-            it.combinations(spectra, 2)
+            mod_cosine_args
             )
 
     distance_matrix = _list_to_matrix(similarity_list, len(spectra))
@@ -51,8 +57,9 @@ def create_mod_cos_similarity_matrix(
 
 def _get_modified_cosine_similarity(
         spec1: MsmsSpectrum,
-        spec2: MsmsSpectrum) -> float:
-    return cosine.modified_cosine(spec1, spec2, 0.05).score
+        spec2: MsmsSpectrum,
+        fragment_tol: float) -> float:
+    return cosine.modified_cosine(spec1, spec2, fragment_tol).score
 
 
 def _list_to_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:
