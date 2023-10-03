@@ -65,12 +65,12 @@ def main(args: Union[str, List[str]] = None) -> int:
 	clustering.plot_dendrogram(clustering=cluster, labels=cluster.labels_)
 
 	# plot molecular network before and after clustering
-	network.network_from_distance_matrix(spectra=spectra, \
-									     dist_matrix=distance_matrix, max_edge_dist=config.max_edge_dist)
+	network.network_from_distance_matrix(spectra=spectra, dist_matrix=distance_matrix, 
+									     max_edges=config.max_edges, max_edge_dist=config.max_edge_dist)
 	# get cluster medoids
 	medoids = clustering.get_medoids(dist_matrix=masked_distance_matrix, clustering=cluster)
-	network.network_from_clusters(spectra=spectra, medoids=medoids, \
-							      dist_matrix=distance_matrix, max_edge_dist=config.max_edge_dist)
+	network.network_from_clusters(spectra=spectra, medoids=medoids, dist_matrix=distance_matrix, 
+							      max_edges=config.max_edges, max_edge_dist=config.max_edge_dist)
 
 	# evaluate clustering
 	print('Cluster evaluation...')

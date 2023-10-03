@@ -154,6 +154,10 @@ class Config:
             '--max_edge_dist', default=0.2, type=float,
             help='Maximum distance between spectra to add edge to the molecular '
             'network (default: %(default)s).')
+        self._parser.add_argument(
+            '--max_edges', default=None, type=int,
+            help='Maximum number of edges for each node in the network. '
+            'If None, all edges are shown (default: %(default)s).')
 
         # Filled in 'parse', contains the specified settings.
         self._namespace = None
