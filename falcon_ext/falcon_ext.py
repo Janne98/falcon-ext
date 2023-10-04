@@ -17,6 +17,7 @@ from plot import network
 from eval import eval
 import config
 from config import *
+from preprocessing import preprocessing
 
 logger = logging.getLogger('falcon_ext')
 
@@ -32,13 +33,19 @@ def main(args: Union[str, List[str]] = None) -> int:
 	if not os.path.isfile(anno_filename):
 		raise ValueError(f'Non-existing annotations file (anno_filename)')
 
+    # read file and process spectra
 	print('Reading MGF file ...')
-
-	spectra = list(mgf_io.get_spectra(source=spec_filename))
+	raw_spectra = mgf_io.get_spectra(source=spec_filename)
+	spectra = list(preprocessing.process_all_spectra(raw_spectra, 
+												  config.min_peaks, config.min_mz_range,
+												  config.min_mz, config.max_mz,
+												  config.remove_precursor_tol,
+												  config.min_intensity, 
+												  config.max_peaks_used, config.scaling))
+	spectra = [spectrum for spectrum in spectra if spectrum is not None]
 	spectra.sort(key=lambda x: x.precursor_mz)
 	# spectra = spectra[33:40]
 	spectra = spectra[:200]
-	n_spectra = len(spectra)
 
 	scan_idx_list = [int(spec.identifier) for spec in spectra]
 

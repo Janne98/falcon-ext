@@ -115,39 +115,39 @@ class Config:
             '(default: %(default)s).')
 
         # PREPROCESSING
-        # self._parser.add_argument(
-        #     '--min_peaks', default=5, type=int,
-        #     help='Discard spectra with fewer than this number of peaks '
-        #          '(default: %(default)s).')
-        # self._parser.add_argument(
-        #     '--min_mz_range', default=250., type=float,
-        #     help='Discard spectra with a smaller mass range '
-        #          '(default: %(default)s m/z).')
-        # self._parser.add_argument(
-        #     '--min_mz', default=101., type=float,
-        #     help='Minimum peak m/z value (inclusive, '
-        #          'default: %(default)s m/z).')
-        # self._parser.add_argument(
-        #     '--max_mz', default=1500., type=float,
-        #     help='Maximum peak m/z value (inclusive, '
-        #          'default: %(default)s m/z).')
-        # self._parser.add_argument(
-        #     '--remove_precursor_tol', default=1.5, type=float,
-        #     help='Window around the precursor mass to remove peaks '
-        #          '(default: %(default)s m/z).')
-        # self._parser.add_argument(
-        #     '--min_intensity', default=0.01, type=float,
-        #     help='Remove peaks with a lower intensity relative to the base '
-        #          'intensity (default: %(default)s).')
-        # self._parser.add_argument(
-        #     '--max_peaks_used', default=50, type=int,
-        #     help='Only use the specified most intense peaks in the spectra '
-        #          '(default: %(default)s).')
-        # self._parser.add_argument(
-        #     '--scaling', default='off', type=str,
-        #     choices=['off', 'root', 'log', 'rank'],
-        #     help='Peak scaling method used to reduce the influence of very '
-        #          'intense peaks (default: %(default)s).')
+        self._parser.add_argument(
+            '--min_peaks', default=5, type=int,
+            help='Discard spectra with fewer than this number of peaks '
+                 '(default: %(default)s).')
+        self._parser.add_argument(
+            '--min_mz_range', default=50., type=float,
+            help='Discard spectra with a smaller mass range '
+                 '(default: %(default)s m/z).')
+        self._parser.add_argument(
+            '--min_mz', default=51., type=float,
+            help='Minimum peak m/z value (inclusive, '
+                 'default: %(default)s m/z).')
+        self._parser.add_argument(
+            '--max_mz', default=1500., type=float,
+            help='Maximum peak m/z value (inclusive, '
+                 'default: %(default)s m/z).')
+        self._parser.add_argument(
+            '--remove_precursor_tol', default=1.5, type=float,
+            help='Window around the precursor mass to remove peaks '
+                 '(default: %(default)s m/z).')
+        self._parser.add_argument(
+            '--min_intensity', default=0.01, type=float,
+            help='Remove peaks with a lower intensity relative to the base '
+                 'intensity (default: %(default)s).')
+        self._parser.add_argument(
+            '--max_peaks_used', default=50, type=int,
+            help='Only use the specified most intense peaks in the spectra '
+                 '(default: %(default)s).')
+        self._parser.add_argument(
+            '--scaling', default='off', type=str,
+            choices=['off', 'root', 'log', 'rank'],
+            help='Peak scaling method used to reduce the influence of very '
+                 'intense peaks (default: %(default)s).')
 
         # MOLECULAR NETWORKING
         self._parser.add_argument(
