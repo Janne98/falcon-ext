@@ -60,6 +60,12 @@ class Config:
         #     '--export_representatives', action='store_true',
         #     help='Export cluster representatives to an MGF file '
         #          '(default: no export).')
+        self._parser.add_argument(
+            '--dist_matrix_file', type=str, default=None,
+            help='Precomputed distance matrix file in .npz format')
+        self._parser.add_argument(
+            '--export_dist_matrix', action='store_true',
+            help='Export distance matrix as .npz file (default: no export)')
 
         # CLUSTERING
         self._parser.add_argument(

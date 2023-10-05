@@ -8,10 +8,10 @@ from matchms import Spectrum
 from matchms.similarity import ModifiedCosine
 
 import numpy as np
+import itertools as it
+import scipy.sparse as ss
 
 from multiprocessing.pool import ThreadPool
-
-import itertools as it
 
 from . import cosine
 
@@ -107,3 +107,33 @@ def similarity_to_distance(similarity_matrix: np.ndarray) -> np.ndarray:
         Squarre matrix containing all pairwise distances.
     """
     return 1 - similarity_matrix
+
+def save_matrix(matrix:np.ndarray, filename: str) -> None:
+    """
+    Save matrix as npz file.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Matrix to save.
+    filename : str
+        Name of the npz file.
+    """
+    np.savez(filename, matrix=matrix)
+
+def load_matrix(filename: str) -> np.ndarray:
+    """
+    Load matrix from npz file.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the file containing a numpy array.
+    
+    Returns
+    -------
+    np.ndarray
+        Matrix loaded from file.
+    """
+    matrix = np.load(filename)
+    return matrix['arr_0']

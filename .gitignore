@@ -53,3 +53,4 @@ docs/_build/
 /figures
 *.csv
 *.mgf
+*.npz
