@@ -81,12 +81,6 @@ class Config:
             help='Fragment mass tolerance in m/z (default: %(default)s m/z).')
 
         # self._parser.add_argument(
-        #     '--eps', type=float, default=0.1,
-        #     help='The eps parameter (cosine distance) for DBSCAN clustering '
-        #          '(default: %(default)s). Relevant cosine distance thresholds '
-        #          'are typically between 0.05 and 0.30.')
-
-        # self._parser.add_argument(
         #     '--mz_interval', type=int, default=1,
         #     help='Precursor m/z interval (centered around x.5 Da) to process '
         #          'spectra simultaneously (default: %(default)s m/z).')
@@ -112,6 +106,10 @@ class Config:
         #          'during querying (default: %(default)s).')
 
         self._parser.add_argument(
+            '--cluster_method', default='hierarchical', type=str,
+            help='Clustering method to use, "hierarchical" or "DBSCAN" '
+            '(default: %(default)s).')
+        self._parser.add_argument(
             '--linkage', default='average', type=str,
             help='Linkage criterion to use for hierarchical clustering, see sklearn docs '
             '(default: %(default)s).')
@@ -119,6 +117,14 @@ class Config:
             '--max_cluster_dist', default=1, type=float,
             help='Maximum distance above which clusters will not be merged anymore '
             '(default: %(default)s).')
+        self._parser.add_argument(
+            '--plot_dendrogram', action='store_true',
+            help='Plot dendrogram, only for hierarchical clustering (default: no plot).')
+        self._parser.add_argument(
+            '--eps', type=float, default=0.1,
+            help='The eps parameter (modified cosine distance) for DBSCAN clustering '
+            '(default: %(default)s). Relevant cosine distance thresholds '
+            'are typically between 0.05 and 0.30.')
 
         # PREPROCESSING
         self._parser.add_argument(

@@ -6,6 +6,7 @@ from typing import List, Tuple, Dict
 
 from spectrum_utils.spectrum import MsmsSpectrum
 
+
 def network_from_distance_matrix(
         spectra: List[MsmsSpectrum], 
         dist_matrix: np.ndarray,
@@ -42,7 +43,7 @@ def network_from_distance_matrix(
 
 def network_from_clusters(
         spectra: List[MsmsSpectrum],
-        medoids: Dict[int, Tuple[int, int]],
+        core_samples: np.ndarray,
         dist_matrix: np.ndarray,
         max_edges: int,
         max_edge_dist: float) -> None:
@@ -53,9 +54,8 @@ def network_from_clusters(
     ----------
     spectra: List[MsmsSpectrum]
         List of MS/MS spectra.
-    medoids: Dict[int, Tuple[int, int]]
-        dictionary of {clusted_idx: (cluster size, medoid_spectrum_idx)}-format,
-        contains the cluster size and spectrum index of the medoid for each cluster.
+    core_samples: np.ndarray
+        list of indices of core samples.
     dist_matrix: np.ndarray
         pairwise distance matrix of the spectra.
     max_edges:
@@ -63,10 +63,9 @@ def network_from_clusters(
     max_edge_dist:
         maximum pairwise distance above which no edge will be added to the network.
     """
-    medoids_idx = [idx for _, (_, idx) in medoids.items()]
-    spec_slice = [spectra[idx] for idx in medoids_idx]
-    dist_slice = np.array([[dist_matrix[idx][idy] for idy in medoids_idx] \
-                           for idx in medoids_idx])
+    spec_slice = [spectra[idx] for idx in core_samples]
+    dist_slice = np.array([[dist_matrix[idx][idy] for idy in core_samples] \
+                           for idx in core_samples])
 
     graph = nx.Graph()
     graph.add_nodes_from(spec_slice)
@@ -103,6 +102,8 @@ def _add_edges(
         List of MS/MS spectra.
     dist_matrix: np.ndarray
         pairwise distance matrix of the spectra.
+    max_edges:
+        amount of edges to add for each node. If none, add all edges.
     max_edge_dist:
         maximum pairwise distance above which no edge will be added to the network.
 

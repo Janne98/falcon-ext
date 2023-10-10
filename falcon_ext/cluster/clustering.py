@@ -4,133 +4,62 @@ import matplotlib.pyplot as plt
 
 from typing import List, Dict, Tuple
 
-from scipy.cluster.hierarchy import dendrogram
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, DBSCAN
+
+import collections
+
+import config
+from config import *
+from . import dbscan
+from . import hierarchical
 
 
-def generate_clusters(
-        dist_matrix: np.ndarray, 
-        connectivity: np.ndarray = None,
-        linkage:str = "complete", 
-        distance_threshold: float = 1):
+ClusterResult = collections.namedtuple(
+    'Clustering', ['labels', 'n_clusters', 'core_samples']
+)
+
+
+def generate_clusters(dist_matrix: np.ndarray) -> ClusterResult:
     """
-    Generate clusters using agglomerative (hierarchical) clustering.
+    Generate clusters using agglomerative (hierarchical) clustering or DBSCAN.
 
     Parameters
     ----------
     dist_matrix : np.ndarray
         distance matrix used for clustering.
-    connectivity : np.ndarray
-        connectivity matrix that defines the neighboring samples for each sample.
-    linkage: str
-        linkage method (see sklear documentation).
-    distance_threshold: float
-        distance above which clusters will not be merged (see sklearn docs).
 
     Returns
     -------
-    AgglomerativeClustering
+    Clustering
         clustering of spectra.
     """
-    clustering = AgglomerativeClustering(
-        n_clusters=None,
-        metric="precomputed", 
-        connectivity=connectivity,
-        linkage=linkage,
-        distance_threshold=distance_threshold,
-        compute_distances=True).fit(dist_matrix)
-    return clustering
+    if config.cluster_method == 'hierarchical':
+        result = hierarchical.generate_clusters(dist_matrix, 
+                                                config.linkage, 
+                                                config.max_cluster_dist)
+        return ClusterResult(result.labels_, result.n_clusters, 
+                          hierarchical.get_medoids(dist_matrix, result.labels_))
+    
+    elif config.cluster_method == 'DBSCAN':
+        result = dbscan.generate_clusters(dist_matrix, config.eps)
+        return ClusterResult(result.labels_, max(result.labels_), result.core_sample_indices_)
+    
+    else:
+        raise ValueError(f'Unknown clustering method "{config.cluster_method}"')
 
 
-def get_medoids( 
-        dist_matrix: np.ndarray, 
-        clustering: AgglomerativeClustering) -> Dict[int, Tuple[int, int]]:
-    """
-    Get the index of the representative spectrum (medoid) for each cluster.
-
-    Parameters
-    ----------
-    dist_matrix : np.ndarray
-        distance matrix.
-    clustering : AgglomerativeClustering
-        result of clustering
-
-    Returns
-    -------
-    Dict[int, Tuple[int, int]]
-        dictionary indicating the cluster size and representative spectrum (medoid) for each cluster.
-        format: {cluster label : (cluster size, spectrum index)}
-    """
-    labels = clustering.labels_
-    # create dict of {cluster_label : [spectrum_idx]}-format
-    cluster_dict = {}
-    for cluster_label in range(max(labels) + 1):
-        cluster_dict[cluster_label] = [idx for idx, label in enumerate(labels) \
-                                       if label == cluster_label]
-    # print(cluster_dict)
-    # create dict of {cluster_label : medoid_spectrum_idx}-format
-    medoids = {}
-    for cluster, specs in cluster_dict.items():
-        cluster_size = len(specs)
-        dist_sums = []
-        if len(specs) < 2:
-            medoids[cluster] = (1, specs[0])
-            continue
-        for spec in specs:
-            other_specs = [spec_idx for spec_idx in specs if spec_idx != spec]
-            dist_sums.append(sum(dist_matrix[spec][other_specs]))
-        medoids[cluster] = (cluster_size, specs[dist_sums.index(min(dist_sums))])
-    print(medoids)
-
-    return medoids
-
-
-def clusters_to_csv(clustering: AgglomerativeClustering, spec_map: List[int]) -> None:
+def clusters_to_csv(clustering: ClusterResult, idx_to_scan_map: List[int]) -> None:
     """
     Write cluster assignments to csv file.
 
     Parameters
     ----------
-    clustering : AgglomerativeClustering
+    clustering : ClusterResult
         clustering result.
     spec_map: List[int]
         list of scan ids mapping index in clustering to scan.
     """
-    labels = clustering.labels_
-    cluster_assignments = pd.DataFrame({'scan_id': spec_map, 'cluster_labels': labels})
+    labels = clustering.labels
+    cluster_assignments = pd.DataFrame({'scan_id': idx_to_scan_map, 
+                                        'cluster_labels': labels})
     cluster_assignments.to_csv('cluster_assignments.csv', index=False)
-
-
-# code from: 
-# https://scikit-learn.org/stable/auto_examples/cluster/plot_agglomerative_dendrogram.html
-def plot_dendrogram(clustering, **kwargs):
-    """
-    Plot a dendrogram of the clustering result.
-
-    Parameters
-    ----------
-    clustering : AgglomerativeClustering
-        clustering result.
-    """
-    # Create linkage matrix and then plot the dendrogram
-
-    # create the counts of samples under each node
-    counts = np.zeros(clustering.children_.shape[0])
-    n_samples = len(clustering.labels_)
-    for i, merge in enumerate(clustering.children_):
-        current_count = 0
-        for child_idx in merge:
-            if child_idx < n_samples:
-                current_count += 1  # leaf node
-            else:
-                current_count += counts[child_idx - n_samples]
-        counts[i] = current_count
-
-    linkage_matrix = np.column_stack(
-        [clustering.children_, clustering.distances_, counts]
-    ).astype(float)
-
-    # plot the corresponding dendrogram
-    fig = plt.figure("Clustering dendrogram")
-    dendrogram(linkage_matrix, **kwargs)
-    fig.show()

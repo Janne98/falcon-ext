@@ -60,43 +60,36 @@ def main(args: Union[str, List[str]] = None) -> int:
     else:
         # calculate pairwise mod cos similarity
         print('Calculating modified cosine similarity ...')
-        similarity_matrix = similarity.create_mod_cos_similarity_matrix(spectra=spectra, \
-                                                                        fragment_tol=config.fragment_tol)
-        distance_matrix = similarity.similarity_to_distance(similarity_matrix=similarity_matrix)
+        similarity_matrix = similarity.create_mod_cos_similarity_matrix(spectra, 
+                                                                        config.fragment_tol)
+        distance_matrix = similarity.similarity_to_distance(similarity_matrix)
         if config.export_dist_matrix:
              similarity.save_matrix(distance_matrix, 'distance_matrix.npz')
 
     # create masked distance matrix for clustering based on precursor mass
     print('Generating mask ...')
-    mask = masking.generate_mask(spectra=spectra, mz_tolerance=config.precursor_tol)
-    masked_distance_matrix = similarity.similarity_to_distance(\
-        similarity_matrix=np.multiply(similarity_matrix, mask))
+    mask = masking.generate_mask(spectra, config.precursor_tol)
+    masked_distance_matrix = similarity.similarity_to_distance(np.multiply(similarity_matrix, mask))
     # deal with floating point inaccuracy 
     # np.clip results in "ValueError: Linkage 'Z' uses the same cluster more than once." when plotting dendrogram
     masked_distance_matrix = np.where(masked_distance_matrix>0, masked_distance_matrix, 0)
 
-    # cluster spectra and plot dendrogram
+    # cluster spectra (and plot dendrogram)
     print('Clustering...')
-    cluster = clustering.generate_clusters(dist_matrix=masked_distance_matrix, 
-                                            linkage=config.linkage,
-                                            distance_threshold=config.max_cluster_dist)
-    clustering.plot_dendrogram(clustering=cluster, labels=cluster.labels_)
+    cluster = clustering.generate_clusters(masked_distance_matrix)
 
     # plot molecular network before and after clustering
-    network.network_from_distance_matrix(spectra=spectra, dist_matrix=distance_matrix, 
-                                            max_edges=config.max_edges, max_edge_dist=config.max_edge_dist)
-    # get cluster medoids
-    medoids = clustering.get_medoids(dist_matrix=masked_distance_matrix, clustering=cluster)
-    network.network_from_clusters(spectra=spectra, medoids=medoids, dist_matrix=distance_matrix, 
-                                    max_edges=config.max_edges, max_edge_dist=config.max_edge_dist)
+    network.network_from_distance_matrix(spectra, distance_matrix, config.max_edges, 
+                                         config.max_edge_dist)
+    network.network_from_clusters(spectra, cluster.core_samples, distance_matrix, 
+                                  config.max_edges, config.max_edge_dist)
 
     # evaluate clustering
     print('Cluster evaluation...')
-    eval.evaluate_clustering(filename=anno_filename, clustering=cluster, \
-                                spec_map=scan_idx_list, medoids=medoids)
+    eval.evaluate_clustering(anno_filename, cluster, scan_idx_list)
 
     # IO
-    clustering.clusters_to_csv(clustering=cluster, spec_map=scan_idx_list)
+    clustering.clusters_to_csv(cluster, scan_idx_list)
 
     plt.show() # keep figures alive
 
