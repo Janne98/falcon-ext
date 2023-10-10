@@ -48,8 +48,8 @@ def main(args: Union[str, List[str]] = None) -> int:
                                                     config.max_peaks_used, config.scaling))
     spectra = [spectrum for spectrum in spectra if spectrum is not None]
     spectra.sort(key=lambda x: x.precursor_mz)
-    spectra = spectra[30:36]
-    # spectra = spectra[:200]
+    # spectra = spectra[30:36]
+    spectra = spectra[:200]
 
     scan_idx_list = [int(spec.identifier) for spec in spectra]
 
@@ -93,7 +93,7 @@ def main(args: Union[str, List[str]] = None) -> int:
     # evaluate clustering
     print('Cluster evaluation...')
     eval.evaluate_clustering(filename=anno_filename, clustering=cluster, \
-                                spec_map=scan_idx_list)
+                                spec_map=scan_idx_list, medoids=medoids)
 
     # IO
     clustering.clusters_to_csv(clustering=cluster, spec_map=scan_idx_list)

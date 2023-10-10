@@ -1,15 +1,17 @@
 import pandas as pd
 import numpy as np
 
-from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
+from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score, completeness_score
 from sklearn.cluster import AgglomerativeClustering
 
 from typing import List, Dict, Tuple
+from collections import Counter
 
 def evaluate_clustering(
     filename: str, 
     clustering: AgglomerativeClustering,
-    spec_map: List[int]) -> None:
+    spec_map: List[int], 
+    medoids: Dict[int, Tuple[int, int]]) -> None:
     """
     Evaluate the clustering performance.
 
@@ -35,11 +37,23 @@ def evaluate_clustering(
         for scan_id in identified_spectra]
 
     # calculate the adjusted rand index for the spectra with ground truth
-    ari = _adjusted_rand_index(true_labels, pred_labels_identified)
-    print("adjusted rand index: " + str(ari))
+    # ari = _adjusted_rand_index(true_labels, pred_labels_identified)
+    # print("adjusted rand index: " + str(ari))
     # calculate the adjusted mutual information score for all spectra with ground truth
-    mis = _mutual_information_score(true_labels, pred_labels_identified)
-    print("mutual information score: " + str(mis))
+    # mis = _mutual_information_score(true_labels, pred_labels_identified)
+    # print("mutual information score: " + str(mis))
+    # calculate completeness score for all spectra with ground truth
+    completeness = _completeness_score(true_labels, pred_labels_identified)
+    print('completeness score: ' + str(completeness))
+    # calculate fraction of clustered spectra
+    clustered_spectra = _clustered_spectra(clustering, medoids)
+    print('clustered spectra: ' + str(clustered_spectra))
+    # calculate fraction of incorrectly clustered spectra for all spectra with ground truth
+    incorrectly_clustered_spectra = _incorrectly_clustered_spectra(pred_labels_identified,
+                                                                   medoids, 
+                                                                   true_labels)
+    print('incorreclty clustered spectra: ' + str(incorrectly_clustered_spectra))
+
 
 def _read_tsv_file(filename: str) -> pd.DataFrame:
     """
@@ -128,3 +142,47 @@ def _mutual_information_score(true_labels: np.ndarray, pred_labels: np.ndarray) 
         adjusted mutual information score.
     """
     return adjusted_mutual_info_score(true_labels, pred_labels)
+
+def _completeness_score(true_labels: np.ndarray, pred_labels: np.ndarray) -> float:
+    
+    return completeness_score(true_labels, pred_labels)
+
+def _count_singletons(medoids: Dict[int, Tuple[int, int]]) -> int:
+    
+    singleton_count = 0
+    for _, (n_spectra, _) in medoids.items():
+        if n_spectra == 1:
+            singleton_count += 1
+
+    return singleton_count
+
+def _clustered_spectra(
+        clustering: AgglomerativeClustering, 
+        medoids: Dict[int, Tuple[int, int]] = None) -> float:
+
+        return (clustering.n_leaves_ - _count_singletons(medoids)) / clustering.n_leaves_
+        
+def _incorrectly_clustered_spectra(
+        pred_labels_identified: np.ndarray, 
+        medoids: Dict[int, Tuple[int, int]],
+        true_labels: List[int]) -> float:
+    
+    incorrect_count = 0
+
+    unique_pred_lables = np.unique(pred_labels_identified)
+    # count incorrectly clustered spectra in each cluster
+    for label in unique_pred_lables:
+        # skip singletons
+        if medoids.get(label)[0] < 2:
+            continue
+        # get idx of all spectra in cluster
+        cluster_members = [idx for idx, pred_label in enumerate(pred_labels_identified) \
+                           if pred_label == label]
+        # get the most frequent true label in cluster
+        members_true_labels = np.array(true_labels)[cluster_members]
+        most_freq_label = Counter(members_true_labels).most_common(1)[0][0]
+        # count clusters where true label != most frequent label
+        incorrect_count += sum(1 for label in members_true_labels \
+                               if label != most_freq_label)
+    
+    return incorrect_count / len(true_labels)
