@@ -1,6 +1,7 @@
 import numpy as np
 
 from typing import Dict, Tuple
+from collections import Counter
 
 from sklearn.cluster import AgglomerativeClustering
 from scipy.cluster.hierarchy import dendrogram
@@ -36,6 +37,9 @@ def generate_clusters(dist_matrix: np.ndarray,
         linkage=linkage,
         distance_threshold=distance_threshold,
         compute_distances=True).fit(dist_matrix)
+    
+    new_labels = singletons_to_noise(clustering.labels_)
+    clustering.labels_ = new_labels
 
     if config.plot_dendrogram:
         plot_dendrogram(clustering=clustering, labels=clustering.labels_)
@@ -61,22 +65,42 @@ def get_medoids(dist_matrix: np.ndarray, labels: np.ndarray) -> np.ndarray:
     medoids = []
 
     cluster_dict = {}
-    for cluster_label in range(max(labels) + 1):
+    for cluster_label in labels:
+        if cluster_label == -1:
+            continue
         cluster_dict[cluster_label] = [idx for idx, label in enumerate(labels) \
                                        if label == cluster_label]
 
     for _, spectra in cluster_dict.items():
         dist_sums = []
-        if len(spectra) < 2:
-            medoids.append(spectra[0])
-            continue
         for spec in spectra:
             other_specs = [spec_idx for spec_idx in spectra if spec_idx != spec]
             dist_sums.append(sum(dist_matrix[spec][other_specs]))
         medoids.append(spectra[dist_sums.index(min(dist_sums))])
 
-    return medoids
+    return np.array(medoids)
 
+
+def singletons_to_noise(labels: np.ndarray) -> np.ndarray:
+    """
+    Label clusters of size 1 as noise (-1).
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        array of predicted labels.
+
+    Returns
+    -------
+    np.ndarray
+        new labels where samples in singleton clusters are replaced by -1 (noise).
+    """
+    # count occurences of labels
+    c = Counter(labels)
+    singleton_labels = [k for k, v in c.items() if v == 1]
+    # if label appears once, replace with -1 (noise sample)
+    new_labels = [l if l not in singleton_labels else -1 for l in labels]
+    return np.array(new_labels)
 
 
 # code from: 

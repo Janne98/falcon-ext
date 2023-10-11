@@ -44,6 +44,7 @@ def network_from_distance_matrix(
 def network_from_clusters(
         spectra: List[MsmsSpectrum],
         core_samples: np.ndarray,
+        noise_samples: np.ndarray,
         dist_matrix: np.ndarray,
         max_edges: int,
         max_edge_dist: float) -> None:
@@ -63,25 +64,30 @@ def network_from_clusters(
     max_edge_dist:
         maximum pairwise distance above which no edge will be added to the network.
     """
-    spec_slice = [spectra[idx] for idx in core_samples]
-    dist_slice = np.array([[dist_matrix[idx][idy] for idy in core_samples] \
-                           for idx in core_samples])
+    slice_samples = np.concatenate((core_samples, noise_samples))
+    slice_samples.sort()
+    spec_slice = [(idx, spectra[idx]) for idx in slice_samples]
+    dist_slice = np.array([[dist_matrix[idx][idy] for idy in slice_samples] \
+                           for idx in slice_samples])
 
     graph = nx.Graph()
-    graph.add_nodes_from(spec_slice)
+    graph.add_nodes_from([x[1] for x in spec_slice])
 
-    graph = _add_edges(graph=graph, spectra=spec_slice, dist_matrix=dist_slice, 
-                       max_edges=max_edges, max_edge_dist=max_edge_dist)
+    graph = _add_edges(graph=graph, spectra=[x[1] for x in spec_slice], 
+                       dist_matrix=dist_slice, max_edges=max_edges, 
+                       max_edge_dist=max_edge_dist)
 
     label_dict = {}
-    for spec in spec_slice:
+    node_size = []
+    node_color = []
+    for idx, spec in spec_slice:
         label_dict[spec] = spec.precursor_mz
-
-    # node_size = [cluster_size * 200 for _, (cluster_size, _) in medoids.items()] # default 300
-    node_size = 300
+        node_size.append(300.0 if idx in core_samples else 100.0)
+        node_color.append('#1f78b4' if idx in core_samples else '#91aaa9')
 
     fig = plt.figure("Molecular network after clustering")
-    nx.draw(graph, labels=label_dict, with_labels=True, node_size=node_size)
+    nx.draw(graph, labels=label_dict, with_labels=True, 
+            node_size=node_size, node_color=node_color) 
     fig.show()
 
     

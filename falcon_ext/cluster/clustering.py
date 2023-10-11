@@ -15,7 +15,7 @@ from . import hierarchical
 
 
 ClusterResult = collections.namedtuple(
-    'Clustering', ['labels', 'n_clusters', 'core_samples']
+    'Clustering', ['labels', 'n_clusters', 'core_samples', 'noise_samples']
 )
 
 
@@ -38,14 +38,35 @@ def generate_clusters(dist_matrix: np.ndarray) -> ClusterResult:
                                                 config.linkage, 
                                                 config.max_cluster_dist)
         return ClusterResult(result.labels_, result.n_clusters, 
-                          hierarchical.get_medoids(dist_matrix, result.labels_))
+                             hierarchical.get_medoids(dist_matrix, result.labels_),
+                             _get_noise_samples(result.labels_))
     
     elif config.cluster_method == 'DBSCAN':
         result = dbscan.generate_clusters(dist_matrix, config.eps)
-        return ClusterResult(result.labels_, max(result.labels_), result.core_sample_indices_)
+        return ClusterResult(result.labels_, max(result.labels_),
+                             result.core_sample_indices_,
+                             _get_noise_samples(result.labels_))
     
     else:
         raise ValueError(f'Unknown clustering method "{config.cluster_method}"')
+    
+
+def _get_noise_samples(labels: np.ndarray) -> np.ndarray:
+    """
+    Get indices of noise samples.
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        array of predicted labels.
+
+    Returns
+    -------
+    np.ndarray
+        array of indices of noise samples (label = -1).
+    """
+    noise_idx = [idx for idx in range(len(labels)) if labels[idx] == -1]
+    return np.array(noise_idx)
 
 
 def clusters_to_csv(clustering: ClusterResult, idx_to_scan_map: List[int]) -> None:

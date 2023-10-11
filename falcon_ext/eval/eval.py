@@ -48,7 +48,7 @@ def evaluate_clustering(
     completeness = completeness_score(true_labels, pred_labels_identified)
     print('completeness score: ' + str(completeness))
     # calculate fraction of clustered spectra
-    clustered_spectra = _clustered_spectra(clustering)
+    clustered_spectra = _clustered_spectra(pred_labels)
     print('clustered spectra: ' + str(clustered_spectra))
     # calculate fraction of incorrectly clustered spectra for all spectra with ground truth
     incorrectly_clustered_spectra = _incorrectly_clustered_spectra(pred_labels,
@@ -126,28 +126,25 @@ def _count_singletons(labels: np.ndarray) -> int:
     int
         number of singletons.
     """
-    _, cluster_sizes = np.unique(labels, return_counts=True)
-    singleton_count = sum(size > 1 for size in cluster_sizes)
-    # add functionality to deal with noise samples (label=-1)
-    return singleton_count
+    return sum(label == -1 for label in labels)
 
 
-def _clustered_spectra(clustering: ClusterResult) -> float:
+def _clustered_spectra(labels: np.ndarray) -> float:
     """
     Calculate fraction of clustered spectra.
 
     Parameters
     ----------
-    clustering: ClusterResult
-        result of clustering. 
+    labels: np.ndarray
+        array of labels. 
 
     Returns
     -------
     float
         fraction of clustered spectra.
     """
-    n_spectra = len(clustering.labels)
-    return (n_spectra - _count_singletons(clustering.labels)) / n_spectra
+    n_spectra = len(labels)
+    return (n_spectra - _count_singletons(labels)) / n_spectra
 
 
 def _incorrectly_clustered_spectra(
@@ -176,10 +173,8 @@ def _incorrectly_clustered_spectra(
     unique_pred_lables = np.unique(pred_labels_identified)
     # count incorrectly clustered spectra in each cluster
     for label in unique_pred_lables:
-        # skip singletons
+        # skip noise
         if label == -1:
-            continue
-        if np.count_nonzero(pred_labels == label) < 2:
             continue
         # get idx of all spectra in cluster
         cluster_members = [idx for idx, pred_label in enumerate(pred_labels_identified) \
@@ -188,7 +183,6 @@ def _incorrectly_clustered_spectra(
         members_true_labels = np.array(true_labels)[cluster_members]
         most_freq_label = Counter(members_true_labels).most_common(1)[0][0]
         # count clusters where true label != most frequent label
-        incorrect_count += sum(1 for label in members_true_labels \
-                               if label != most_freq_label)
+        incorrect_count += sum(label != most_freq_label for label in members_true_labels)
     
-    return incorrect_count / len(true_labels)
+    return incorrect_count / sum(l != -1 for l in pred_labels_identified)

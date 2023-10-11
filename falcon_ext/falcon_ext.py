@@ -81,8 +81,8 @@ def main(args: Union[str, List[str]] = None) -> int:
     # plot molecular network before and after clustering
     network.network_from_distance_matrix(spectra, distance_matrix, config.max_edges, 
                                          config.max_edge_dist)
-    network.network_from_clusters(spectra, cluster.core_samples, distance_matrix, 
-                                  config.max_edges, config.max_edge_dist)
+    network.network_from_clusters(spectra, cluster.core_samples, cluster.noise_samples, 
+                                  distance_matrix, config.max_edges, config.max_edge_dist)
 
     # evaluate clustering
     print('Cluster evaluation...')
