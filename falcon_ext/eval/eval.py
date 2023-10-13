@@ -27,7 +27,21 @@ def evaluate_clustering(
         list of scan indices, mapping of spectrum index (in clustering) to scan index.
     """
     annotations = _read_tsv_file(filename)
+
     pred_labels = clustering.labels # sorted by pepmass
+
+    n_found_clusters = len(np.delete(np.unique(pred_labels), -1))
+    print('number of found clusters: ' + str(n_found_clusters))
+
+    # spectrum_idx = []
+    # for idx, row in annotations.iterrows():
+    #     try: 
+    #         spectrum_idx.append(int(idx_to_scan_map.index(row['#Scan#'])))
+    #     except:
+    #         spectrum_idx.append(None)
+    # annotations['spectrum_idx'] = spectrum_idx
+    # print(annotations)
+
     # get annotations of identified spectra that are in clustering
     annotations_subset = annotations[annotations['#Scan#'].isin(idx_to_scan_map)]
     # get the scan idx of all identified spectra in clustering
@@ -72,10 +86,15 @@ def _read_tsv_file(filename: str) -> pd.DataFrame:
         dataframe containing the scan id and compound label for each identified spectrum.
     """
     df = pd.read_csv(filename, sep='\t')
-    # translate compound name to integer
-    df["Compound_idx"] = df["Compound_Name"].astype("category").cat.codes
 
-    return df[["#Scan#", "Compound_idx"]]
+    df['target_tuple'] = list(zip(df['cid'], df['collision_e']))#, df['IonMode'], df['Ion_Source']]))
+
+    df['target'] = df['target_tuple'].astype('category').cat.codes
+
+    print(df['target_tuple'].unique())
+
+    # return df[['#Scan#', 'target']]
+    return df[['#Scan#', 'cid']]
 
 
 def _get_identified_spectra(annotations: pd.DataFrame) -> List[int]:
@@ -92,7 +111,7 @@ def _get_identified_spectra(annotations: pd.DataFrame) -> List[int]:
     List[int]
         scan id of each identified spectrum.
     """
-    return annotations["#Scan#"].tolist()
+    return annotations['#Scan#'].tolist()
 
 
 def _get_spectrum_labels(annotations: pd.DataFrame) -> List[int]:
@@ -109,7 +128,7 @@ def _get_spectrum_labels(annotations: pd.DataFrame) -> List[int]:
     List[int]
         compound id of each identified spectrum.
     """
-    return annotations["Compound_idx"].tolist()
+    return annotations['cid'].tolist()
 
 
 def _count_singletons(labels: np.ndarray) -> int:

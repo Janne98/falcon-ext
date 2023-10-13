@@ -6,6 +6,8 @@ from typing import List, Tuple, Dict
 
 from spectrum_utils.spectrum import MsmsSpectrum
 
+import json
+
 
 def network_from_distance_matrix(
         spectra: List[MsmsSpectrum], 
@@ -29,16 +31,21 @@ def network_from_distance_matrix(
     graph = nx.Graph()
     graph.add_nodes_from(spectra)
 
-    label_dict = {}
-    for spec in spectra:
-        label_dict[spec] = spec.precursor_mz
-
     graph = _add_edges(graph=graph, spectra=spectra, dist_matrix=dist_matrix, 
                        max_edges=max_edges, max_edge_dist=max_edge_dist)
 
+    label_dict = {}
+    for idx, spec in enumerate(spectra):
+        label_dict[spec] = spec.precursor_mz
+
     fig = plt.figure("Molecular network before clustering")
-    nx.draw(graph, labels=label_dict, with_labels=True)
+    nx.draw(graph, pos=nx.spring_layout(graph, k=0.7), labels=label_dict, 
+            with_labels=True)
     fig.show()
+
+    # cytoscape_data = nx.cytoscape_data(graph)
+    # with open('network_before_clustering.cyjs', 'w') as f:
+    #     json.dump(cytoscape_data, f, default=str)
 
 
 def network_from_clusters(
@@ -82,12 +89,12 @@ def network_from_clusters(
     node_color = []
     for idx, spec in spec_slice:
         label_dict[spec] = spec.precursor_mz
-        node_size.append(300.0 if idx in core_samples else 100.0)
+        node_size.append(300.0 if idx in core_samples else 150.0)
         node_color.append('#1f78b4' if idx in core_samples else '#91aaa9')
 
     fig = plt.figure("Molecular network after clustering")
-    nx.draw(graph, labels=label_dict, with_labels=True, 
-            node_size=node_size, node_color=node_color) 
+    nx.draw(graph, pos=nx.spring_layout(graph, k=0.7), labels=label_dict,
+            with_labels=True, node_size=node_size, node_color=node_color) #fruchterman_reingold_layout
     fig.show()
 
     

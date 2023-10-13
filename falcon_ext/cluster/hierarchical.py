@@ -5,11 +5,15 @@ from collections import Counter
 
 from sklearn.cluster import AgglomerativeClustering
 from scipy.cluster.hierarchy import dendrogram
+import matplotlib
 import matplotlib.pyplot as plt
+
 
 import config
 from config import *
 
+
+matplotlib.use('TkAgg')
 
 def generate_clusters(dist_matrix: np.ndarray, 
                       linkage:str = "complete", 
@@ -43,6 +47,7 @@ def generate_clusters(dist_matrix: np.ndarray,
 
     if config.plot_dendrogram:
         plot_dendrogram(clustering=clustering, labels=clustering.labels_)
+        
     return clustering
 
 
