@@ -110,6 +110,11 @@ class Config:
             help='Clustering method to use, "hierarchical" or "DBSCAN" '
             '(default: %(default)s).')
         self._parser.add_argument(
+            '--min_cluster_size', default=2, type=int,
+            help='Minimum cluster size. In HC: samples in clusters of size < min_cluster_size '
+            'will be labeled as noise. In DBSCAN: corresponds to min_samples parameter '
+            '(see sklearn docs). (default: %(default)s).')
+        self._parser.add_argument(
             '--linkage', default='average', type=str,
             help='Linkage criterion to use for hierarchical clustering, see sklearn docs '
             '(default: %(default)s).')

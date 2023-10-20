@@ -8,18 +8,17 @@ from sklearn.cluster import AgglomerativeClustering, DBSCAN
 
 import collections
 
-import config
-from config import *
 from . import dbscan
 from . import hierarchical
 
 
 ClusterResult = collections.namedtuple(
-    'Clustering', ['labels', 'n_clusters', 'core_samples', 'noise_samples']
+    'Clustering', ['labels', 'n_clusters', 'cluster_samples', 'noise_samples']
 )
 
 
-def generate_clusters(dist_matrix: np.ndarray) -> ClusterResult:
+def generate_clusters(dist_matrix: np.ndarray, cluster_method: str, linkage: str, 
+                      max_cluster_dist: float, eps: float, min_cluster_size: int) -> ClusterResult:
     """
     Generate clusters using agglomerative (hierarchical) clustering or DBSCAN.
 
@@ -33,22 +32,59 @@ def generate_clusters(dist_matrix: np.ndarray) -> ClusterResult:
     Clustering
         clustering of spectra.
     """
-    if config.cluster_method == 'hierarchical':
+    if cluster_method == 'hierarchical':
         result = hierarchical.generate_clusters(dist_matrix, 
-                                                config.linkage, 
-                                                config.max_cluster_dist)
-        return ClusterResult(result.labels_, result.n_clusters, 
-                             hierarchical.get_medoids(dist_matrix, result.labels_),
+                                                linkage, 
+                                                max_cluster_dist,
+                                                min_cluster_size)
+        print(result.n_clusters_)
+        return ClusterResult(result.labels_, result.n_clusters_, 
+                             _get_medoids(dist_matrix, result.labels_),
                              _get_noise_samples(result.labels_))
     
-    elif config.cluster_method == 'DBSCAN':
-        result = dbscan.generate_clusters(dist_matrix, config.eps)
+    elif cluster_method == 'DBSCAN':
+        result = dbscan.generate_clusters(dist_matrix, eps, min_cluster_size)
         return ClusterResult(result.labels_, max(result.labels_),
-                             result.core_sample_indices_,
+                             _get_medoids(dist_matrix, result.labels_),
                              _get_noise_samples(result.labels_))
     
     else:
-        raise ValueError(f'Unknown clustering method "{config.cluster_method}"')
+        raise ValueError(f'Unknown clustering method "{cluster_method}"')
+    
+
+def _get_medoids(dist_matrix: np.ndarray, labels: np.ndarray) -> np.ndarray:
+    """
+    Get indices of medoids for each cluster.
+
+    Parameters
+    ----------
+    dist_matrix : np.ndarray
+        distance matrix used for clustering.
+    labels : np.ndarray
+        array of predicted labels.
+
+    Returns
+    -------
+    np.ndarray
+        indices of medoid spectra.
+    """
+    medoids = []
+
+    cluster_dict = {}
+    for cluster_label in np.unique(labels):
+        if cluster_label == -1:
+            continue
+        cluster_dict[cluster_label] = [idx for idx, label in enumerate(labels) \
+                                       if label == cluster_label]
+    
+    for _, spectra in cluster_dict.items():
+        dist_sums = []
+        for spec in spectra:
+            other_specs = [spec_idx for spec_idx in spectra if spec_idx != spec]
+            dist_sums.append(sum(dist_matrix[spec][other_specs]))
+        medoids.append(spectra[dist_sums.index(min(dist_sums))])
+
+    return np.array(medoids)
     
 
 def _get_noise_samples(labels: np.ndarray) -> np.ndarray:

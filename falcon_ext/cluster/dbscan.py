@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 
-def generate_clusters(dist_matrix: np.ndarray, eps: float) -> DBSCAN:
+def generate_clusters(dist_matrix: np.ndarray, eps: float, min_cluster_size: int) -> DBSCAN:
     """
     Generate clusters using DBSCAN.
 
@@ -20,8 +20,9 @@ def generate_clusters(dist_matrix: np.ndarray, eps: float) -> DBSCAN:
     DBSCAN
         clustering of spectra.
     """
+    print('DBSCAN clustering...')
     clustering = DBSCAN(eps=eps, 
-                        min_samples=2, 
+                        min_samples=min_cluster_size, 
                         metric='precomputed', 
                         n_jobs=-1).fit(dist_matrix)
     return clustering

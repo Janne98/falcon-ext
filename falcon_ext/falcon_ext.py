@@ -6,10 +6,7 @@ import itertools as it
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-from typing import Dict, Iterator, List, Tuple, Union
-
-import multiprocessing
+from typing import List, Tuple, Union
 
 from ms_io import mgf_io
 from cluster import similarity, masking, clustering
@@ -76,12 +73,14 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     # cluster spectra (and plot dendrogram)
     print('Clustering...')
-    cluster = clustering.generate_clusters(masked_distance_matrix)
+    cluster = clustering.generate_clusters(masked_distance_matrix, config.cluster_method, 
+                                           config.linkage, config.max_cluster_dist, 
+                                           config.eps, config.min_cluster_size)
 
     # plot molecular network before and after clustering
     network.network_from_distance_matrix(spectra, distance_matrix, config.max_edges, 
                                          config.max_edge_dist)
-    network.network_from_clusters(spectra, cluster.core_samples, cluster.noise_samples, 
+    network.network_from_clusters(spectra, cluster.cluster_samples, cluster.noise_samples, 
                                   distance_matrix, config.max_edges, config.max_edge_dist)
 
     # evaluate clustering
@@ -93,8 +92,74 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     plt.show() # keep figures alive
 
+    # run experiments
+    # cluster_methods = ['hierarchical', 'DBSCAN']
+    # linkage_criteria = ['complete', 'average', 'single']
+    # max_cluster_dists = np.arange(0.0002, 0.01, 0.0002)
+    # eps = max_cluster_dists
+
+    # h_combos = list(it.product(cluster_methods[:1], linkage_criteria, max_cluster_dists, [0]))
+    # d_combos = list(it.product(cluster_methods[1:], [''], [0], eps))
+    # combos = h_combos + d_combos
+
+    # result_dict = {}
+    # # hierarchical clustering
+    # for l in linkage_criteria:
+    #     cd_dict = {}
+    #     for cd in max_cluster_dists:
+    #         result_exp = run_experiment(
+    #             masked_distance_matrix, anno_filename, scan_idx_list, 
+    #             'hierarchical', l, cd, 0, config.min_cluster_size)
+    #         cd_dict[cd] = result_exp
+    #     result_dict[('hierarchical', l)] = cd_dict
+    # # dbscan
+    # eps_dict = {}
+    # for e in eps: 
+    #     result_exp = run_experiment(
+    #         masked_distance_matrix, anno_filename, scan_idx_list, 'DBSCAN', '', 0, e, min_cluster_size)
+    #     eps_dict[e] = result_exp
+    # result_dict['DBSCAN'] = eps_dict
+    # print(result_dict)
+
+    # # plot performance graphs
+    # fig1 = plt.figure("clustered vs incorrect")
+    # fig2 = plt.figure("completeness vs incorrect")
+
+    # ax1 = fig1.gca()
+    # ax2 = fig2.gca()
+
+    # for key in result_dict.keys():
+    #     m_dict = result_dict.get(key)
+    #     completeness = [r[1][1] for r in m_dict.items()]
+    #     clustered = [r[1][2] for r in m_dict.items()]
+    #     incorrect = [r[1][3] for r in m_dict.items()]
+
+    #     ax1.plot(incorrect, clustered, marker='o')
+    #     ax2.plot(incorrect, completeness, marker='o')
+
+    # ax1.legend(result_dict.keys())
+    # ax2.legend(result_dict.keys())
+
+    # ax1.set_ylabel('clustered')
+    # ax1.set_xlabel('incorrectly clustered')
+
+    # ax2.set_ylabel('completeness')
+    # ax2.set_xlabel('incorrectly clustered')
+
+    # plt.show()
+
     return 0
 
+
+def run_experiment(masked_dist_matrix: np.ndarray, annotations_file: str, 
+                   idx_scan_map: List[int], cluster_method: str, linkage: str, 
+                   max_cluster_dist: float, eps: float, min_cluster_size: int) -> Tuple[int, float, float, float]:
+    
+    cluster = clustering.generate_clusters(masked_dist_matrix, cluster_method, 
+                                           linkage, max_cluster_dist, eps, min_cluster_size)
+    eval_result = eval.evaluate_clustering(annotations_file, cluster, idx_scan_map)
+
+    return eval_result
 
 if __name__ == '__main__':
 	sys.exit(main())

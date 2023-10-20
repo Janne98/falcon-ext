@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 import pubchempy as pcp
 
-from typing import Union, List
-
 
 def main():
 

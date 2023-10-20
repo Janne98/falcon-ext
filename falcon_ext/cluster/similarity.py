@@ -136,4 +136,4 @@ def load_matrix(filename: str) -> np.ndarray:
         Matrix loaded from file.
     """
     matrix = np.load(filename)
-    return matrix['arr_0']
+    return matrix['matrix']
