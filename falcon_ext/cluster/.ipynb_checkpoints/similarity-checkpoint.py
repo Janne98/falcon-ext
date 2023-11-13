@@ -47,48 +47,29 @@ def create_mod_cos_similarity_matrix(
             mod_cosine_args
             )
 
-    distance_matrix, matches_matrix = _similarity_list_to_matrices(similarity_list, len(spectra))
+    distance_matrix = _list_to_matrix(similarity_list, len(spectra))
     
     assert np.allclose(distance_matrix, distance_matrix.T, rtol=1e-05, atol=1e-08), \
         f"Distance matrix not symmetric"
     
-    return distance_matrix, matches_matrix
+    return distance_matrix
 
 
 def _get_modified_cosine_similarity(
         spec1: MsmsSpectrum,
         spec2: MsmsSpectrum,
         fragment_tol: float) -> float:
-    """
-    Calculate the modified cosine similarity between two spectra.
-
-    Parameters
-    ----------
-    spec1 : MsmsSpectrum
-        First spectrum
-    spec2 : MsmsSpectrum
-        Second spectrum
-    fragment_tol : float
-        Fragment tolerance in Da.
-    
-    Returns
-    -------
-    float
-        Modified cosine similarity between the two spectra.
-    """
-    similarity = cosine.modified_cosine(spec1, spec2, fragment_tol)
-    return (similarity.score, similarity.matches)
+    return cosine.modified_cosine(spec1, spec2, fragment_tol).score
 
 
-
-def _similarity_list_to_matrices(similarity_list: List[float], n_spectra: int) -> np.ndarray:
+def _list_to_matrix(dist_list: List[float], n_spectra: int) -> np.ndarray:
     """
     Create a distance matrix from a list only containing the distances 
         above the diagonal, similarity metric must be symmetric.
 
     Parameters
     ----------
-    similarity_list : List[float]
+    dist_list : List[float]
         list of distances.
     n_spectra : int
         number of spectra in distance matrix
@@ -99,21 +80,16 @@ def _similarity_list_to_matrices(similarity_list: List[float], n_spectra: int) -
         Squarre matrix containing all pairwise distances.
     """
     dist_matrix = np.zeros((n_spectra, n_spectra))
-    matches_matrix = np.zeros((n_spectra, n_spectra))
 
     loc_u = np.triu_indices(n_spectra, k=1)
     loc_l = np.tril_indices(n_spectra, k=-1)
     loc_d = np.diag_indices(n_spectra)
 
-    dist_matrix[loc_u] = [sim[0] for sim in similarity_list]
+    dist_matrix[loc_u] = dist_list
     dist_matrix[loc_l] = dist_matrix.T[loc_l]
     dist_matrix[loc_d] = 1
 
-    matches_matrix[loc_u] = [sim[1] for sim in similarity_list]
-    matches_matrix[loc_l] = matches_matrix.T[loc_l]
-    matches_matrix[loc_d] = 0
-
-    return dist_matrix, matches_matrix
+    return dist_matrix
 
 
 def similarity_to_distance(similarity_matrix: np.ndarray) -> np.ndarray:

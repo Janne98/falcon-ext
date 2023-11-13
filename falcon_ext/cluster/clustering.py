@@ -18,7 +18,7 @@ ClusterResult = collections.namedtuple(
 
 
 def generate_clusters(dist_matrix: np.ndarray, cluster_method: str, linkage: str, 
-                      max_cluster_dist: float, eps: float, min_cluster_size: int) -> ClusterResult:
+                      eps: float, min_cluster_size: int) -> ClusterResult:
     """
     Generate clusters using agglomerative (hierarchical) clustering or DBSCAN.
 
@@ -35,9 +35,8 @@ def generate_clusters(dist_matrix: np.ndarray, cluster_method: str, linkage: str
     if cluster_method == 'hierarchical':
         result = hierarchical.generate_clusters(dist_matrix, 
                                                 linkage, 
-                                                max_cluster_dist,
+                                                eps,
                                                 min_cluster_size)
-        print(result.n_clusters_)
         return ClusterResult(result.labels_, result.n_clusters_, 
                              _get_medoids(dist_matrix, result.labels_),
                              _get_noise_samples(result.labels_))

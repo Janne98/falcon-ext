@@ -31,7 +31,7 @@ def evaluate_clustering(
     pred_labels = clustering.labels # sorted by pepmass
 
     n_found_clusters = clustering.n_clusters
-    print('number of found clusters: ' + str(n_found_clusters))
+    # print('number of found clusters: ' + str(n_found_clusters))
 
     # get annotations of identified spectra that are in clustering
     annotations_subset = annotations[annotations['#Scan#'].isin(idx_to_scan_map)]
@@ -42,6 +42,8 @@ def evaluate_clustering(
     # get predicted cluster labels for all identified spectra in clustering
     pred_labels_identified = [pred_labels[idx_to_scan_map.index(scan_id)] \
         for scan_id in identified_scan_idx]
+    print('number of identified spectra: ' + str(len(identified_scan_idx)))
+    print('number of unique compounds: ' + str(len(np.unique(true_labels))))
 
     # calculate completeness score for all spectra with ground truth
     completeness = completeness_score(true_labels, pred_labels_identified)
@@ -53,6 +55,12 @@ def evaluate_clustering(
     incorrectly_clustered_spectra = _incorrectly_clustered_spectra(pred_labels_identified, 
                                                                    true_labels)
     print('incorreclty clustered spectra: ' + str(incorrectly_clustered_spectra))
+    # count clusters
+    print('number of clusters: ' + str(_count_clusters(pred_labels)))
+    # count singletons
+    print('number of singletons: ' + str(_count_noise_samples(pred_labels)))
+    # count 5 largest cluster sizes
+    print('largest cluster sizes: ' + str(_get_n_largest_cluster_sizes(pred_labels, 5)))
 
     return (n_found_clusters, completeness, clustered_spectra, incorrectly_clustered_spectra)
 
@@ -73,14 +81,14 @@ def _read_tsv_file(filename: str) -> pd.DataFrame:
     """
     df = pd.read_csv(filename, sep='\t')
 
-    df['target_tuple'] = list(zip(df['cid'], df['collision_e']))#, df['IonMode'], df['Ion_Source']]))
+    # df['target_tuple'] = list(zip(df['cid'], df['collision_e']))#, df['IonMode'], df['Ion_Source']]))
 
-    df['target'] = df['target_tuple'].astype('category').cat.codes
+    # df['target'] = df['target_tuple'].astype('category').cat.codes
 
     # print(df['target_tuple'].unique())
 
     # return df[['#Scan#', 'target']]
-    return df[['#Scan#', 'cid']]
+    return df[['#Scan#', 'inchikey_p1', 'Compound_Name']]
 
 
 def _get_identified_spectra(annotations: pd.DataFrame) -> List[int]:
@@ -114,7 +122,7 @@ def _get_spectrum_labels(annotations: pd.DataFrame) -> List[int]:
     List[int]
         compound id of each identified spectrum.
     """
-    return annotations['cid'].tolist()
+    return annotations['inchikey_p1'].tolist()
 
 
 def _count_noise_samples(labels: np.ndarray) -> int:
@@ -175,6 +183,9 @@ def _incorrectly_clustered_spectra(
     incorrect_count = 0
 
     unique_pred_lables = np.unique(pred_labels_identified)
+    if unique_pred_lables is None:
+        return -1
+    
     # count incorrectly clustered spectra in each cluster
     for label in unique_pred_lables:
         # skip noise
@@ -190,3 +201,41 @@ def _incorrectly_clustered_spectra(
         incorrect_count += sum(label != most_freq_label for label in members_true_labels)
     
     return incorrect_count / sum(l != -1 for l in pred_labels_identified)
+
+
+def _count_clusters(labels: np.ndarray) -> int:
+    """
+    Count clusters.
+
+    Parameters
+    ----------
+    labels: np.ndarray
+        array of labels. 
+
+    Returns
+    -------
+    int
+        number of clusters.
+    """
+    return len(np.unique(labels)) - 1 # -1 for noise (noise samples are not clustered)
+
+
+def _get_n_largest_cluster_sizes(labels: np.ndarray, n: int) -> List[int]:
+    """
+    Get the n largest cluster sizes.
+
+    Parameters
+    ----------
+    labels: np.ndarray
+        array of labels. 
+    n: int
+        number of largest cluster sizes to return.
+
+    Returns
+    -------
+    List[int]
+        n largest cluster sizes.
+    """
+    cluster_sizes = [sum(labels == label) if label != -1 else 0 for label in np.unique(labels)]
+    cluster_sizes.sort(reverse=True)
+    return cluster_sizes[:n]

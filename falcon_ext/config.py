@@ -64,6 +64,9 @@ class Config:
             '--dist_matrix_file', type=str, default=None,
             help='Precomputed distance matrix file in .npz format')
         self._parser.add_argument(
+            '--matches_matrix_file', type=str, default=None,
+            help='Precomputed matches matrix file in .npz format')
+        self._parser.add_argument(
             '--export_dist_matrix', action='store_true',
             help='Export distance matrix as .npz file (default: no export)')
 
@@ -175,6 +178,10 @@ class Config:
             '--max_edges', default=None, type=int,
             help='Maximum number of edges for each node in the network. '
             'If None, all edges are shown (default: %(default)s).')
+        self._parser.add_argument(
+            '--min_matched_peaks', default=0, type=int,
+            help='Minimum number of matching peaks between spectra to add edge to '
+            'the molecular network (default: %(default)s).')
 
         # Filled in 'parse', contains the specified settings.
         self._namespace = None

@@ -35,7 +35,7 @@ def generate_clusters(dist_matrix: np.ndarray,
     AgglomerativeClustering
         clustering of spectra.
     """
-    print(f"{linkage}-linkage hierarchical clustering...")
+    # print(f"{linkage}-linkage hierarchical clustering...")
     clustering = AgglomerativeClustering(
         n_clusters=None,
         metric="precomputed", 
@@ -73,6 +73,7 @@ def _post_process_clusters(labels: np.ndarray, min_cluster_size: int) -> np.ndar
     # if label appears once, replace with -1 (noise sample)
     new_labels = [l if l not in singleton_labels else -1 for l in labels]
     return np.array(new_labels)
+
 
 def _count_clusters(labels: np.ndarray) -> np.ndarray:
     return len(np.delete(np.unique(labels), -1))

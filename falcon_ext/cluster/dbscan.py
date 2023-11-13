@@ -20,7 +20,7 @@ def generate_clusters(dist_matrix: np.ndarray, eps: float, min_cluster_size: int
     DBSCAN
         clustering of spectra.
     """
-    print('DBSCAN clustering...')
+    # print('DBSCAN clustering...')
     clustering = DBSCAN(eps=eps, 
                         min_samples=min_cluster_size, 
                         metric='precomputed', 

@@ -8,13 +8,16 @@ import matplotlib.pyplot as plt
 
 from typing import List, Tuple, Union
 
-from ms_io import mgf_io
+from ms_io import mgf_io, mzml_io
 from cluster import similarity, masking, clustering
 from plot import network
 from eval import eval
 import config
 from config import *
 from preprocessing import preprocessing
+
+from skopt import gp_minimize
+import functools
 
 logger = logging.getLogger('falcon_ext')
 
@@ -46,22 +49,24 @@ def main(args: Union[str, List[str]] = None) -> int:
     spectra = [spectrum for spectrum in spectra if spectrum is not None]
     spectra.sort(key=lambda x: x.precursor_mz)
     # spectra = spectra[30:36]
-    spectra = spectra[:200]
+    # spectra = spectra[:200]
 
     scan_idx_list = [int(spec.identifier) for spec in spectra]
 
-    if config.dist_matrix_file is not None:
+    if config.dist_matrix_file is not None and config.matches_matrix_file is not None:
         # read distance matrix file and create similarity matrix
         distance_matrix = similarity.load_matrix(config.dist_matrix_file)
+        matches_matrix = similarity.load_matrix(config.matches_matrix_file)
         similarity_matrix = similarity.similarity_to_distance(distance_matrix)
     else:
         # calculate pairwise mod cos similarity
         print('Calculating modified cosine similarity ...')
-        similarity_matrix = similarity.create_mod_cos_similarity_matrix(spectra, 
+        similarity_matrix, matches_matrix = similarity.create_mod_cos_similarity_matrix(spectra, 
                                                                         config.fragment_tol)
         distance_matrix = similarity.similarity_to_distance(similarity_matrix)
         if config.export_dist_matrix:
-             similarity.save_matrix(distance_matrix, 'distance_matrix.npz')
+            similarity.save_matrix(distance_matrix, 'distance_matrix.npz')
+            similarity.save_matrix(matches_matrix, 'matches_matrix.npz')
 
     # create masked distance matrix for clustering based on precursor mass
     print('Generating mask ...')
@@ -74,17 +79,18 @@ def main(args: Union[str, List[str]] = None) -> int:
     # cluster spectra (and plot dendrogram)
     print('Clustering...')
     cluster = clustering.generate_clusters(masked_distance_matrix, config.cluster_method, 
-                                           config.linkage, config.max_cluster_dist, 
-                                           config.eps, config.min_cluster_size)
+                                           config.linkage, config.eps, config.min_cluster_size)
 
     # plot molecular network before and after clustering
-    network.network_from_distance_matrix(spectra, distance_matrix, config.max_edges, 
-                                         config.max_edge_dist)
+    print('---NETWORK EVALUATION---')
+    network.network_from_distance_matrix(spectra, distance_matrix, matches_matrix, config.max_edges, 
+                                         config.max_edge_dist, config.min_matched_peaks)
     network.network_from_clusters(spectra, cluster.cluster_samples, cluster.noise_samples, 
-                                  distance_matrix, config.max_edges, config.max_edge_dist)
+                                  distance_matrix, matches_matrix, config.max_edges, 
+                                  config.max_edge_dist, config.min_matched_peaks)
 
     # evaluate clustering
-    print('Cluster evaluation...')
+    print('---CLUSTER EVALUATION---')
     eval.evaluate_clustering(anno_filename, cluster, scan_idx_list)
 
     # IO
@@ -92,10 +98,12 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     plt.show() # keep figures alive
 
-    # run experiments
+    # # run experiments
     # cluster_methods = ['hierarchical', 'DBSCAN']
     # linkage_criteria = ['complete', 'average', 'single']
-    # max_cluster_dists = np.arange(0.0002, 0.01, 0.0002)
+    # max_cluster_dists = np.arange(0.0005, 0.1, 0.0005)
+    # min_samples = np.arange(2, 6, 1)
+
     # eps = max_cluster_dists
 
     # h_combos = list(it.product(cluster_methods[:1], linkage_criteria, max_cluster_dists, [0]))
@@ -107,19 +115,43 @@ def main(args: Union[str, List[str]] = None) -> int:
     # for l in linkage_criteria:
     #     cd_dict = {}
     #     for cd in max_cluster_dists:
-    #         result_exp = run_experiment(
-    #             masked_distance_matrix, anno_filename, scan_idx_list, 
-    #             'hierarchical', l, cd, 0, config.min_cluster_size)
+    #         result_exp = run_experiment(cd, config.min_cluster_size, masked_distance_matrix, 
+    #                                     anno_filename, scan_idx_list, 'hierarchical', l)
     #         cd_dict[cd] = result_exp
     #     result_dict[('hierarchical', l)] = cd_dict
     # # dbscan
     # eps_dict = {}
     # for e in eps: 
-    #     result_exp = run_experiment(
-    #         masked_distance_matrix, anno_filename, scan_idx_list, 'DBSCAN', '', 0, e, min_cluster_size)
+    #     result_exp = run_experiment(e, config.min_cluster_size, masked_distance_matrix, 
+    #                                 anno_filename, scan_idx_list, 'DBSCAN', '')
     #     eps_dict[e] = result_exp
     # result_dict['DBSCAN'] = eps_dict
     # print(result_dict)
+
+    # run_single_link_exp = functools.partial(run_experiment,
+    #                                     masked_dist_matrix=masked_distance_matrix,
+    #                                     annotations_file=anno_filename,
+    #                                     idx_scan_map=scan_idx_list,
+    #                                     cluster_method='hierarchical',
+    #                                     linkage='single')
+    # run_average_link_exp = functools.partial(run_experiment,
+    #                                     masked_dist_matrix=masked_distance_matrix,
+    #                                     annotations_file=anno_filename,
+    #                                     idx_scan_map=scan_idx_list,
+    #                                     cluster_method='hierarchical',
+    #                                     linkage='average')
+    # run_complete_link_exp = functools.partial(run_experiment,
+    #                                     masked_dist_matrix=masked_distance_matrix,
+    #                                     annotations_file=anno_filename,
+    #                                     idx_scan_map=scan_idx_list,
+    #                                     cluster_method='hierarchical',
+    #                                     linkage='complete')
+    # run_dbscan_exp = functools.partial(run_experiment,
+    #                                     masked_dist_matrix=masked_distance_matrix,
+    #                                     annotations_file=anno_filename,
+    #                                     idx_scan_map=scan_idx_list,
+    #                                     cluster_method='DBSCAN',
+    #                                     linkage='')
 
     # # plot performance graphs
     # fig1 = plt.figure("clustered vs incorrect")
@@ -130,12 +162,14 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     # for key in result_dict.keys():
     #     m_dict = result_dict.get(key)
-    #     completeness = [r[1][1] for r in m_dict.items()]
-    #     clustered = [r[1][2] for r in m_dict.items()]
-    #     incorrect = [r[1][3] for r in m_dict.items()]
+    #     compl_incorr_frontier = get_pareto_frontier(np.column_stack([[r[1][3] for r in m_dict.items()], [r[1][1] for r in m_dict.items()]]))
+    #     clust_incorr_frontier = get_pareto_frontier(np.column_stack([[r[1][3] for r in m_dict.items()], [r[1][2] for r in m_dict.items()]]))
+    #     # completeness = [r[1][1] for r in m_dict.items()]
+    #     # clustered = [r[1][2] for r in m_dict.items()]
+    #     # incorrect = [r[1][3] for r in m_dict.items()]
 
-    #     ax1.plot(incorrect, clustered, marker='o')
-    #     ax2.plot(incorrect, completeness, marker='o')
+    #     ax1.plot(compl_incorr_frontier[:, 0], compl_incorr_frontier[:, 1], marker='o')
+    #     ax2.plot(clust_incorr_frontier[:, 0], clust_incorr_frontier[:, 1], marker='o')
 
     # ax1.legend(result_dict.keys())
     # ax2.legend(result_dict.keys())
@@ -151,15 +185,28 @@ def main(args: Union[str, List[str]] = None) -> int:
     return 0
 
 
-def run_experiment(masked_dist_matrix: np.ndarray, annotations_file: str, 
-                   idx_scan_map: List[int], cluster_method: str, linkage: str, 
-                   max_cluster_dist: float, eps: float, min_cluster_size: int) -> Tuple[int, float, float, float]:
+def run_experiment(eps: float, min_cluster_size: int, masked_dist_matrix: np.ndarray, 
+                   annotations_file: str, idx_scan_map: List[int], cluster_method: str, 
+                   linkage: str) -> Tuple[int, float, float, float]:
     
     cluster = clustering.generate_clusters(masked_dist_matrix, cluster_method, 
-                                           linkage, max_cluster_dist, eps, min_cluster_size)
+                                           linkage, eps, min_cluster_size)
     eval_result = eval.evaluate_clustering(annotations_file, cluster, idx_scan_map)
 
     return eval_result
+
+
+def get_pareto_frontier(arr: np.ndarray) -> np.ndarray:
+    # Sort by the first column.
+    arr_sorted = arr[arr[:, 0].argsort()]
+    # Iteratively add points to the Pareto frontier.
+    pareto_idx = [0]
+    for i in range(1, arr_sorted.shape[0]):
+        if (arr_sorted[i, 0] > arr_sorted[pareto_idx[-1], 0] and
+                arr_sorted[i, 1] > arr_sorted[pareto_idx[-1], 1]):
+            pareto_idx.append(i)
+    return arr_sorted[pareto_idx]
+
 
 if __name__ == '__main__':
 	sys.exit(main())
