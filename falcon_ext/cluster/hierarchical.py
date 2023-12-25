@@ -8,8 +8,8 @@ from scipy.cluster.hierarchy import dendrogram
 import matplotlib
 import matplotlib.pyplot as plt
 
-import config
-from config import *
+from falcon_ext import config
+from falcon_ext.config import *
 
 
 matplotlib.use('TkAgg')

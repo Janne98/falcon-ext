@@ -70,7 +70,7 @@ def main(args: Union[str, List[str]] = None) -> int:
 
     # create masked distance matrix for clustering based on precursor mass
     print('Generating mask ...')
-    mask = masking.generate_mask(spectra, config.precursor_tol)
+    mask = masking.generate_mask(spectra, config.precursor_tol[0], config.precursor_tol[1])
     masked_distance_matrix = similarity.similarity_to_distance(np.multiply(similarity_matrix, mask))
     # deal with floating point inaccuracy 
     # np.clip results in "ValueError: Linkage 'Z' uses the same cluster more than once." when plotting dendrogram
@@ -97,90 +97,6 @@ def main(args: Union[str, List[str]] = None) -> int:
     clustering.clusters_to_csv(cluster, scan_idx_list)
 
     plt.show() # keep figures alive
-
-    # # run experiments
-    # cluster_methods = ['hierarchical', 'DBSCAN']
-    # linkage_criteria = ['complete', 'average', 'single']
-    # max_cluster_dists = np.arange(0.0005, 0.1, 0.0005)
-    # min_samples = np.arange(2, 6, 1)
-
-    # eps = max_cluster_dists
-
-    # h_combos = list(it.product(cluster_methods[:1], linkage_criteria, max_cluster_dists, [0]))
-    # d_combos = list(it.product(cluster_methods[1:], [''], [0], eps))
-    # combos = h_combos + d_combos
-
-    # result_dict = {}
-    # # hierarchical clustering
-    # for l in linkage_criteria:
-    #     cd_dict = {}
-    #     for cd in max_cluster_dists:
-    #         result_exp = run_experiment(cd, config.min_cluster_size, masked_distance_matrix, 
-    #                                     anno_filename, scan_idx_list, 'hierarchical', l)
-    #         cd_dict[cd] = result_exp
-    #     result_dict[('hierarchical', l)] = cd_dict
-    # # dbscan
-    # eps_dict = {}
-    # for e in eps: 
-    #     result_exp = run_experiment(e, config.min_cluster_size, masked_distance_matrix, 
-    #                                 anno_filename, scan_idx_list, 'DBSCAN', '')
-    #     eps_dict[e] = result_exp
-    # result_dict['DBSCAN'] = eps_dict
-    # print(result_dict)
-
-    # run_single_link_exp = functools.partial(run_experiment,
-    #                                     masked_dist_matrix=masked_distance_matrix,
-    #                                     annotations_file=anno_filename,
-    #                                     idx_scan_map=scan_idx_list,
-    #                                     cluster_method='hierarchical',
-    #                                     linkage='single')
-    # run_average_link_exp = functools.partial(run_experiment,
-    #                                     masked_dist_matrix=masked_distance_matrix,
-    #                                     annotations_file=anno_filename,
-    #                                     idx_scan_map=scan_idx_list,
-    #                                     cluster_method='hierarchical',
-    #                                     linkage='average')
-    # run_complete_link_exp = functools.partial(run_experiment,
-    #                                     masked_dist_matrix=masked_distance_matrix,
-    #                                     annotations_file=anno_filename,
-    #                                     idx_scan_map=scan_idx_list,
-    #                                     cluster_method='hierarchical',
-    #                                     linkage='complete')
-    # run_dbscan_exp = functools.partial(run_experiment,
-    #                                     masked_dist_matrix=masked_distance_matrix,
-    #                                     annotations_file=anno_filename,
-    #                                     idx_scan_map=scan_idx_list,
-    #                                     cluster_method='DBSCAN',
-    #                                     linkage='')
-
-    # # plot performance graphs
-    # fig1 = plt.figure("clustered vs incorrect")
-    # fig2 = plt.figure("completeness vs incorrect")
-
-    # ax1 = fig1.gca()
-    # ax2 = fig2.gca()
-
-    # for key in result_dict.keys():
-    #     m_dict = result_dict.get(key)
-    #     compl_incorr_frontier = get_pareto_frontier(np.column_stack([[r[1][3] for r in m_dict.items()], [r[1][1] for r in m_dict.items()]]))
-    #     clust_incorr_frontier = get_pareto_frontier(np.column_stack([[r[1][3] for r in m_dict.items()], [r[1][2] for r in m_dict.items()]]))
-    #     # completeness = [r[1][1] for r in m_dict.items()]
-    #     # clustered = [r[1][2] for r in m_dict.items()]
-    #     # incorrect = [r[1][3] for r in m_dict.items()]
-
-    #     ax1.plot(compl_incorr_frontier[:, 0], compl_incorr_frontier[:, 1], marker='o')
-    #     ax2.plot(clust_incorr_frontier[:, 0], clust_incorr_frontier[:, 1], marker='o')
-
-    # ax1.legend(result_dict.keys())
-    # ax2.legend(result_dict.keys())
-
-    # ax1.set_ylabel('clustered')
-    # ax1.set_xlabel('incorrectly clustered')
-
-    # ax2.set_ylabel('completeness')
-    # ax2.set_xlabel('incorrectly clustered')
-
-    # plt.show()
 
     return 0
 

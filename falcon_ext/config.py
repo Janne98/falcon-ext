@@ -72,7 +72,7 @@ class Config:
 
         # CLUSTERING
         self._parser.add_argument(
-            '--precursor_tol', default=0.05, #nargs=2, default=[20, 'ppm'],
+            '--precursor_tol', nargs=2, default=[20, 'ppm'],
             help='Precursor tolerance mass and mode (default: 20 ppm). '
                  'Mode should be either "ppm" or "Da".')
         # self._parser.add_argument(
@@ -118,7 +118,7 @@ class Config:
             'will be labeled as noise. In DBSCAN: corresponds to min_samples parameter '
             '(see sklearn docs). (default: %(default)s).')
         self._parser.add_argument(
-            '--linkage', default='average', type=str,
+            '--linkage', default='complete', type=str,
             help='Linkage criterion to use for hierarchical clustering, see sklearn docs '
             '(default: %(default)s).')
         self._parser.add_argument(
@@ -129,7 +129,7 @@ class Config:
             '--plot_dendrogram', action='store_true',
             help='Plot dendrogram, only for hierarchical clustering (default: no plot).')
         self._parser.add_argument(
-            '--eps', type=float, default=0.1,
+            '--eps', type=float, default=0.2,
             help='The eps parameter (modified cosine distance) for DBSCAN clustering '
             '(default: %(default)s). Relevant cosine distance thresholds '
             'are typically between 0.05 and 0.30.')
@@ -198,8 +198,8 @@ class Config:
         """
         self._namespace = vars(self._parser.parse_args(args_str))
 
-        # self._namespace['precursor_tol'][0] = \
-        #     float(self._namespace['precursor_tol'][0])
+        self._namespace['precursor_tol'][0] = \
+            float(self._namespace['precursor_tol'][0])
 
     def __getattr__(self, option):
         if self._namespace is None:

@@ -8,6 +8,10 @@ from spectrum_utils.spectrum import MsmsSpectrum
 
 import json
 
+from config import *
+from preprocessing import preprocessing
+from cluster import similarity
+
 
 def network_from_distance_matrix(
         spectra: List[MsmsSpectrum], 
@@ -52,10 +56,10 @@ def network_from_distance_matrix(
 
     print('Number of nodes before clustering:', _count_nodes(graph))
     degree_dict = _network_degree_distribution(graph)
-    _degree_distribution_plot(degree_dict, before_clustering=True)
+    # _degree_distribution_plot(degree_dict, before_clustering=True)
     print('Average degree before clustering:', str(_average_degree(graph)))
 
-    nx.write_gml(graph, 'network_before_clustering.gml')
+    nx.write_gml(graph, 'network_before_clustering.gml', stringizer=repr)
 
 
 def network_from_clusters(
@@ -90,10 +94,14 @@ def network_from_clusters(
     slice_samples = np.concatenate((core_samples, noise_samples))
     slice_samples.sort()
     spec_slice = [(idx, spectra[idx]) for idx in slice_samples]
+    print(slice_samples)
     dist_slice = np.array([[dist_matrix[idx][idy] for idy in slice_samples] \
                            for idx in slice_samples])
     match_slice = np.array([[match_matrix[idx][idy] for idy in slice_samples] \
                            for idx in slice_samples])
+    if config.export_dist_matrix:
+        similarity.save_matrix(dist_slice, 'distance_matrix_slice.npz')
+        similarity.save_matrix(match_slice, 'matches_matrix_slice.npz')
 
     graph = nx.Graph()
     graph.add_nodes_from([x[1] for x in spec_slice])
@@ -118,10 +126,14 @@ def network_from_clusters(
 
     print('Number of nodes after clustering:', _count_nodes(graph))
     degree_dict = _network_degree_distribution(graph)
-    _degree_distribution_plot(degree_dict, before_clustering=False)
+    # _degree_distribution_plot(degree_dict, before_clustering=False)
     print('Average degree after clustering:', str(_average_degree(graph)))
 
-    nx.write_gml(graph, 'network_after_clustering.gml')
+    if config.cluster_method == 'DBSCAN':
+        network_file = 'network_after_clustering_DBSCAN.gml'
+    else:
+        network_file = 'network_after_clustering_{}.gml'.format(config.linkage)
+    nx.write_gml(graph, network_file, stringizer=repr)
 
     
 def _add_edges(

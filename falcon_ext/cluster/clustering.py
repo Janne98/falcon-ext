@@ -83,7 +83,7 @@ def _get_medoids(dist_matrix: np.ndarray, labels: np.ndarray) -> np.ndarray:
             dist_sums.append(sum(dist_matrix[spec][other_specs]))
         medoids.append(spectra[dist_sums.index(min(dist_sums))])
 
-    return np.array(medoids)
+    return np.asarray(medoids, dtype=int)
     
 
 def _get_noise_samples(labels: np.ndarray) -> np.ndarray:
@@ -101,7 +101,7 @@ def _get_noise_samples(labels: np.ndarray) -> np.ndarray:
         array of indices of noise samples (label = -1).
     """
     noise_idx = [idx for idx in range(len(labels)) if labels[idx] == -1]
-    return np.array(noise_idx)
+    return np.asarray(noise_idx, dtype=int)
 
 
 def clusters_to_csv(clustering: ClusterResult, idx_to_scan_map: List[int]) -> None:
